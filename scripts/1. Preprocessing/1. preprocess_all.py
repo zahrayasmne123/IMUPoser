@@ -20,7 +20,7 @@ from imuposer import math
 import sys
 sys.path.append("/content/IMUPoser")
 
-config = Config(experiment="preprocessing_run", project_root_dir="../../")
+config = Config(experiment="preprocessing_run", project_root_dir="/content/IMUPoser")
 
 def process_amass():
     def _syn_acc(v):
