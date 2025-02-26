@@ -36,6 +36,9 @@ def process_amass():
     ji_mask = torch.tensor([18, 19, 1, 2, 15, 0])
     body_model = ParametricModel(config.og_smpl_model_path)
 
+    # Target frame rate for standardization (e.g., 60 fps)
+    target_framerate = 60
+
     try:
         processed = [fpath.name for fpath in (config.processed_imu_poser / "AMASS").iterdir()]
     except:
@@ -46,24 +49,60 @@ def process_amass():
             continue
         data_pose, data_trans, data_beta, length = [], [], [], []
         print('\rReading', ds_name)
+        
+        # Counter to track file statistics
+        total_files = 0
+        processed_files = 0
+        skipped_files = 0
+        
         for npz_fname in tqdm(glob.glob(os.path.join(config.raw_amass_path, ds_name, '*/*_poses.npz'))):
-            try: cdata = np.load(npz_fname)
-            except: continue
+            total_files += 1
+            try: 
+                cdata = np.load(npz_fname)
+            except: 
+                skipped_files += 1
+                print(f"\rSkipping {npz_fname} - Could not load file")
+                continue
 
-            framerate = int(cdata['mocap_framerate'])
-            if framerate == 120: step = 2
-            elif framerate == 60 or framerate == 59: step = 1
-            else: continue
+            # Handle different frame rates by calculating appropriate step size
+            try:
+                framerate = int(cdata['mocap_framerate'])
+                
+                # Calculate step size to convert to target frame rate
+                # If framerate is lower than target, we'll use step=1 (keep all frames)
+                if framerate <= target_framerate:
+                    step = 1
+                else:
+                    # Calculate the step size as a ratio of original to target frame rate
+                    # Round to nearest integer to get reasonable step sizes
+                    step = round(framerate / target_framerate)
+                
+                # Print information about the file being processed
+                print(f"\rProcessing {npz_fname} - Framerate: {framerate}Hz, Using step={step}")
+                
+                # Process the data with the calculated step size
+                data_pose.extend(cdata['poses'][::step].astype(np.float32))
+                data_trans.extend(cdata['trans'][::step].astype(np.float32))
+                data_beta.append(cdata['betas'][:10])
+                length.append(cdata['poses'][::step].shape[0])
+                processed_files += 1
+                
+            except KeyError as e:
+                skipped_files += 1
+                print(f"\rSkipping {npz_fname} - Missing key: {e}")
+                continue
+            except Exception as e:
+                skipped_files += 1
+                print(f"\rSkipping {npz_fname} - Error: {e}")
+                continue
 
-            data_pose.extend(cdata['poses'][::step].astype(np.float32))
-            data_trans.extend(cdata['trans'][::step].astype(np.float32))
-            data_beta.append(cdata['betas'][:10])
-            length.append(cdata['poses'][::step].shape[0])
-
+        print(f"Dataset {ds_name}: Total files: {total_files}, Processed: {processed_files}, Skipped: {skipped_files}")
+        
         if len(data_pose) == 0:
-            print(f"AMASS dataset, {ds_name} not supported")
+            print(f"AMASS dataset, {ds_name} has no valid files - skipping")
             continue
 
+        # Rest of the function remains the same
         length = torch.tensor(length, dtype=torch.int)
         shape = torch.tensor(np.asarray(data_beta, np.float32))
         tran = torch.tensor(np.asarray(data_trans, np.float32))
@@ -107,6 +146,7 @@ def process_amass():
         torch.save(out_vrot, ds_dir / 'vrot.pt')
         torch.save(out_vacc, ds_dir / 'vacc.pt')
         print('Synthetic AMASS dataset is saved at', str(ds_dir))
+
 
 def process_dipimu(split="test"):
     def _syn_acc(v):
