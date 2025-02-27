@@ -57,10 +57,10 @@ class Config:
             else:
                 print("No experiment name give, can't create dir")
 
-    max_sample_len = 300
+    max_sample_len = 150
     acc_scale = 30
     train_pct = 0.9
-    batch_size = 32
+    batch_size = 4
     torch_seed = 0
 
 # DIP order
