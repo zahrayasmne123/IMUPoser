@@ -38,12 +38,12 @@ checkpoint_path = config.checkpoint_path
 wandb_logger = WandbLogger(project=config.experiment, save_dir=checkpoint_path)
 
 early_stopping_callback = EarlyStopping(monitor="validation_step_loss", mode="min", verbose=False,
-                                        min_delta=0.00001, patience=5)
+                                        min_delta=0.00001, patience=3)
 checkpoint_callback = ModelCheckpoint(monitor="validation_step_loss", mode="min", verbose=False, 
                                       save_top_k=5, dirpath=checkpoint_path, save_weights_only=True, 
                                       filename='epoch={epoch}-val_loss={validation_step_loss:.5f}')
 
-trainer = pl.Trainer(fast_dev_run=fast_dev_run, logger=wandb_logger, max_epochs=1000, accelerator="gpu", devices=[0],
+trainer = pl.Trainer(fast_dev_run=fast_dev_run, logger=wandb_logger, max_epochs=5, accelerator="gpu", devices=[0],
                      callbacks=[early_stopping_callback, checkpoint_callback], deterministic=True)
 
 # %%
