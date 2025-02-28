@@ -250,8 +250,8 @@ def save_animated_sequence(joints_data, output_dir="pose_frames", frame_interval
     
     # Define colored connections for visualization
     colors = {
-        'torso': 'red',
-        'left_leg': 'green',
+        'torso': 'green',
+        'left_leg': 'red',
         'right_leg': 'blue',
         'left_arm': 'orange',
         'right_arm': 'purple'
