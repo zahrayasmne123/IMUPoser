@@ -154,7 +154,7 @@ def run_inference(model, input_tensor_path, output_path=None, device='cpu'):
 def main():
     parser = argparse.ArgumentParser(description="Run inference with IMUPoser model")
     parser.add_argument("--checkpoint", type=str, required=True, help="Path to model checkpoint")
-    parser.add_argument("--input", type=str, default="mobileposer_data.pt", help="Path to input tensor")
+    parser.add_argument("--input", type=str, default="IMUPoser_data.pt", help="Path to input tensor")
     parser.add_argument("--output", type=str, default="pose_predictions.pt", help="Path to save output")
     parser.add_argument("--device", type=str, default="cpu", help="Device to run inference on (cpu or cuda)")
     args = parser.parse_args()

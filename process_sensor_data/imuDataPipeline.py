@@ -3,7 +3,7 @@ from .watch_processor import WatchSensorAligner
 from .earbuds_processor import EarbudSensorAligner
 from .rotation_processor import robust_rotation_matrices_dataframes
 from .synchronise_dataframes import robust_synchronise_dataframes
-from .csvtotensor import create_mobileposer_tensor
+from .csvtotensor import create_IMUPoser_tensor
 from .trim_timestamps import trim_dataframes
 
 import os
@@ -86,14 +86,14 @@ def process_aligned_sensor_data(aligned_dfs, df_names=None):
                                      df_names)
 
 
-    # Step 4: Create MobilePoser tensor
-    print("\nCreating MobilePoser tensor...")
-    tensor = create_mobileposer_tensor(synced_dfs)
+    # Step 4: Create IMUPoser tensor
+    print("\nCreating IMUPoser tensor...")
+    tensor = create_IMUPoser_tensor(synced_dfs)
 
     return synced_dfs, tensor
 
 
-def full_sensor_pipeline(data_dir='1.rawdata'):
+def full_sensor_pipeline(data_dir='rawdata'):
     # Step 1: Align sensor data
     print("Aligning sensor data...")
     aligned_dfs = align_all_sensor_data(data_dir)

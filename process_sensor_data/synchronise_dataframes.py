@@ -160,9 +160,9 @@ def validate_synchronization(dfs, device_names):
     
     # ... (rest of the original validation logic remains the same)
 
-def scale_acceleration_for_mobileposer(df):
+def scale_acceleration_for_IMUPoser(df):
     """
-    Scale acceleration values by 1/30 to match MobilePoser's expected range.
+    Scale acceleration values by 1/30 to match IMUPoser's expected range.
     
     Parameters:
     - df: Input dataframe

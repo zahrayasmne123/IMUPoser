@@ -507,7 +507,7 @@ def process_uploaded_files(uploaded_files, output_dir='output/'):
         
         # st.text("Step 3: Creating visualizations...")
         # # Use the process handler instead of direct visualization
-        # from mobileposer.process_handler import run_visualization_process
+        # from IMUPoser.process_handler import run_visualization_process
         
         # pred_path = Path("data/processed_datasets/predictions.pt")
         # success, message = run_visualization_process(pred_path)

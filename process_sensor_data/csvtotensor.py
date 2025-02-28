@@ -1,4 +1,3 @@
-import pandas as pd
 import numpy as np
 import torch # type: ignore
 
@@ -45,7 +44,7 @@ def create_device_tensor(df):
     rot_values = df[[f'R{i}{j}' for i in range(3) for j in range(3)]].values
     return np.concatenate([acc_values, rot_values], axis=1)
 
-def create_mobileposer_tensor(dfs_list):
+def create_IMUPoser_tensor(dfs_list):
     device_names = ['phone', 'left_watch', 'right_watch', 'earbuds']
     n_frames = validate_input_data(dfs_list, device_names)
     
@@ -81,6 +80,6 @@ def create_mobileposer_tensor(dfs_list):
     print(f"✓ Expected shape: ({n_frames}, 60)")
     
     # Save tensor
-    torch.save({'imu_data': tensor}, 'data/processed_datasets/mobileposer_data.pt')
-    print("\nSaved tensor to mobileposer_data.pt")
+    torch.save({'imu_data': tensor}, 'rawdata/processed_dataset/IMUPoser_data.pt')
+    print("\nSaved tensor to rawdata/processed_dataset/IMUPoser_data.pt")
     return tensor
