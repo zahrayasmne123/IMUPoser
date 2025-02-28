@@ -6,6 +6,7 @@ import torch
 from frontend.analysis.joints import process_joint_angles
 from frontend.analysis.speed import process_movement_speed
 from frontend.analysis.accuracy import process_pose_accuracy
+from process_sensor_data.imuDataPipeline import full_sensor_pipeline
 import numpy as np
 import pandas as pd
 
@@ -496,9 +497,9 @@ def process_uploaded_files(uploaded_files, output_dir='output/'):
         st.info("Starting pipeline processing...")
         
         # # Run pipeline with progress updates
-        # st.text("Step 1: Processing sensor data...")
-        # synced_dfs, tensor = full_sensor_pipeline()
-        # st.text("✓ Sensor data processed")
+        st.text("Step 1: Processing sensor data...")
+        synced_dfs, tensor = full_sensor_pipeline()
+        st.text("✓ Sensor data processed")
         
         # st.text("Step 2: Running model predictions...")
         # predict()
