@@ -465,13 +465,14 @@ def create_sensor_section():
             """)
             
             if st.button("🎧 Launch eSense Data Collection Web Application"):
-                st.switch_page("pages/esens_collection.py")
-                # Here you would typically use st.switch_page() or navigate to the data collection page
-                st.success("Redirecting to Data Collection Page...")
-                # Placeholder for page navigation
-                # st.switch_page("pages/data_collection.py")  # Uncomment if using multi-page app
-                st.session_state.esense_step = 2
-                st.experimental_rerun()
+            # Store the page we want to show in session state
+                if 'current_page' not in st.session_state:
+                    st.session_state.current_page = 'main'
+                    
+                    st.session_state.current_page = 'esens_collection'
+                    st.session_state.esense_step = 2
+                    st.success("Redirecting to Data Collection Page...")
+                    st.experimental_rerun()
         
         # Completion Card
         elif current_step == 2:

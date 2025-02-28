@@ -253,7 +253,11 @@ def render_esense_data_collection():
 
     st.markdown("*Finished collecting data? Navigate back to sensor configuration.*")
     if st.button("← Back to Sensor Device Setup"):
-        st.switch_page("app.py")
+        if 'current_page' not in st.session_state:
+            st.session_state.current_page = 'main'
+        
+        st.session_state.current_page = 'main'
+        st.experimental_rerun()
 
 # Run the page
 render_esense_data_collection()

@@ -5,7 +5,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from frontend.pages.documentation import documentation_help_page
 from frontend.pages.analysis import data_analysis_page
 from frontend.pages.about import about_us_page
-
+from frontend.pages.esens_collection import render_esense_data_collection
 
 # Set page configuration
 st.set_page_config(
@@ -390,6 +390,10 @@ def home_page():
 
 def main():
     """Main function to run the Streamlit app"""
+    # Initialize session state for page navigation if it doesn't exist
+    if 'current_page' not in st.session_state:
+        st.session_state.current_page = 'main'
+    
     # Create sidebar navigation
     st.sidebar.title("Navigation")
     
@@ -397,8 +401,9 @@ def main():
     query_params = st.experimental_get_query_params()
     if query_params.get("page", [""])[0] == "data_collection":
         page = "Data Analysis"
-        # Clear the query parameter
-        st.query_params.clear()
+        # Clear the query parameter - use the older method
+        query_params.pop("page", None)
+        st.experimental_set_query_params(**query_params)
     else:
         page = st.sidebar.radio(
             "Go to",
@@ -406,15 +411,21 @@ def main():
             key="nav_radio"
         )
     
-    # Display selected page
-    if page == "Data Analysis":
-        data_analysis_page()
-    elif page == "Home":
-        home_page()
-    elif page == "About Us":
-        about_us_page()
+    # Check if we need to override the page based on session state
+    if st.session_state.current_page == 'esens_collection':
+        # Import and display the esens collection page
+        
+        render_esense_data_collection()
     else:
-        documentation_help_page()
+        # Display selected page from the sidebar
+        if page == "Data Analysis":
+            data_analysis_page()
+        elif page == "Home":
+            home_page()
+        elif page == "About Us":
+            about_us_page()
+        else:
+            documentation_help_page()
 if __name__ == "__main__":
     main()
 
