@@ -322,7 +322,7 @@ def create_sensor_section():
             # Added key "phone_install_complete"
             if st.button("✅ Mark Installation Complete", key="phone_install_complete"):
                 st.session_state.phone_step = 1
-                st.rerun()
+                st.experimental_rerun()
         
         # Step 2: Configuration
         elif current_step == 1:
@@ -341,7 +341,7 @@ def create_sensor_section():
             # Added key "phone_config_complete"
             if st.button("✅ Configuration Complete", key="phone_config_complete"):
                 st.session_state.phone_step = 2
-                st.rerun()
+                st.experimental_rerun()
         
         # Completion Card
         elif current_step == 2:
@@ -358,7 +358,7 @@ def create_sensor_section():
             # Added key "phone_start_over"
             if st.button("🔄 Start from Beginning", key="phone_start_over"):
                 st.session_state.phone_step = 0
-                st.rerun() 
+                st.experimental_rerun() 
     
     # Wrist Sensors Expander
     with st.expander("⌚ Wrist Sensors", expanded=False):
@@ -389,7 +389,7 @@ def create_sensor_section():
             
             if st.button("✅ Mark Installation Complete"):
                 st.session_state.wrist_step = 1
-                st.rerun()
+                st.experimental_rerun()
                 
         elif current_step == 1:
             st.markdown("""
@@ -405,7 +405,7 @@ def create_sensor_section():
             
             if st.button("✅ Configuration Complete"):
                 st.session_state.wrist_step = 2
-                st.rerun()
+                st.experimental_rerun()
         
         # Show completion card when all steps are done
         elif current_step == 2:
@@ -415,7 +415,7 @@ def create_sensor_section():
             # Add the start over button
             if st.button("🔄 Start from Beginning"):
                 st.session_state.wrist_step = 0
-                st.rerun()
+                st.experimental_rerun()
     
     # eSense Expander
     with st.expander("🎧 eSense Earbuds", expanded=False):
@@ -450,7 +450,7 @@ def create_sensor_section():
             
             if st.button("✅ Web App Setup Complete"):
                 st.session_state.esense_step = 1
-                st.rerun()
+                st.experimental_rerun()
         
         # Step 2: Link to Data Collection
         elif current_step == 1:
@@ -471,7 +471,7 @@ def create_sensor_section():
                 # Placeholder for page navigation
                 # st.switch_page("pages/data_collection.py")  # Uncomment if using multi-page app
                 st.session_state.esense_step = 2
-                st.rerun()
+                st.experimental_rerun()
         
         # Completion Card
         elif current_step == 2:
@@ -486,7 +486,7 @@ def create_sensor_section():
             
             if st.button("🔄 Start from Beginning"):
                 st.session_state.esense_step = 0
-                st.rerun()
+                st.experimental_rerun()
 
 
 
