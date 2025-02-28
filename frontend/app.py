@@ -1,4 +1,7 @@
 import streamlit as st # type: ignore
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from frontend.pages.documentation import documentation_help_page
 from frontend.pages.analysis import data_analysis_page
 from frontend.pages.about import about_us_page
