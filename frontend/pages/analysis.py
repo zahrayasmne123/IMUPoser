@@ -190,7 +190,7 @@ def data_analysis_page():
                         if analysis_type == "Joint Angles":
                             try:
                                 # Load predictions
-                                predictions = torch.load('data/processed_datasets/predictions.pt')
+                                predictions = torch.load('rawdata/processed_dataset/predictions.pt')
                                 st.write("### Joint Angle Analysis")
                                 st.write("The joint angle analysis shows how the angles between connected body segments change over time using the dot product. For example the knee angle is calculated between hip, knee and ankle joint and the elbow joint is calculated between the shoulder, elbow and wrist joint.")
 
@@ -209,7 +209,7 @@ def data_analysis_page():
                         elif analysis_type == "Movement Speed":
                             try:
                                 # Load predictions with proper error handling
-                                predictions = torch.load('data/processed_datasets/predictions.pt')
+                                predictions = torch.load('rawdata/processed_dataset/predictions.pt')
 
                                 speeds, stats = process_movement_speed(predictions)
                                 
@@ -235,7 +235,7 @@ def data_analysis_page():
                         elif analysis_type == "Pose Accuracy":
                             try:
                                 # Load predictions
-                                predictions = torch.load('data/processed_datasets/predictions.pt')
+                                predictions = torch.load('rawdata/processed_dataset/predictions.pt')
                                 
                                 # Process pose accuracy
                                 metrics, stats = process_pose_accuracy(predictions)
