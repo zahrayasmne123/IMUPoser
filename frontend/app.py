@@ -394,7 +394,8 @@ def main():
     st.sidebar.title("Navigation")
     
     # Check if we should redirect to data collection
-    if st.query_params.get("page") == "data_collection":
+    query_params = st.experimental_get_query_params()
+    if query_params.get("page", [""])[0] == "data_collection":
         page = "Data Analysis"
         # Clear the query parameter
         st.query_params.clear()
