@@ -2,8 +2,6 @@ import streamlit as st # type: ignore
 import cv2 # type: ignore
 import os
 from pathlib import Path
-from process_sensor_data.imuDataPipeline import full_sensor_pipeline
-from mobileposer.own_device_predictions import predict
 import torch
 from frontend.analysis.joints import process_joint_angles
 from frontend.analysis.speed import process_movement_speed
@@ -496,27 +494,27 @@ def process_uploaded_files(uploaded_files, output_dir='output/'):
     try:
         st.info("Starting pipeline processing...")
         
-        # Run pipeline with progress updates
-        st.text("Step 1: Processing sensor data...")
-        synced_dfs, tensor = full_sensor_pipeline()
-        st.text("✓ Sensor data processed")
+        # # Run pipeline with progress updates
+        # st.text("Step 1: Processing sensor data...")
+        # synced_dfs, tensor = full_sensor_pipeline()
+        # st.text("✓ Sensor data processed")
         
-        st.text("Step 2: Running model predictions...")
-        predict()
-        st.text("✓ Predictions complete")
+        # st.text("Step 2: Running model predictions...")
+        # predict()
+        # st.text("✓ Predictions complete")
         
-        st.text("Step 3: Creating visualizations...")
-        # Use the process handler instead of direct visualization
-        from mobileposer.process_handler import run_visualization_process
+        # st.text("Step 3: Creating visualizations...")
+        # # Use the process handler instead of direct visualization
+        # from mobileposer.process_handler import run_visualization_process
         
-        pred_path = Path("data/processed_datasets/predictions.pt")
-        success, message = run_visualization_process(pred_path)
+        # pred_path = Path("data/processed_datasets/predictions.pt")
+        # success, message = run_visualization_process(pred_path)
         
-        if success:
-            st.text("✓ Visualization complete")
-            st.success("Processing complete!")
-        else:
-            st.error(f"Visualization failed: {message}")
+        # if success:
+        #     st.text("✓ Visualization complete")
+        #     st.success("Processing complete!")
+        # else:
+        #     st.error(f"Visualization failed: {message}")
             
     except Exception as e:
         st.error(f"""
