@@ -40,8 +40,7 @@ def convert_poses_to_joints(predictions, smpl_model_path=None):
     print(f"Using SMPL model from: {smpl_model_path}")
     
     # Initialize SMPL model
-    device = torch.device('cpu')
-    body_model = ParametricModel(str(smpl_model_path), device=device)
+    body_model = ParametricModel(str(smpl_model_path), device=torch.device('cpu'))
     
     # Get batch size and sequence length
     batch_size, seq_len, n_params = predictions.shape
@@ -215,9 +214,15 @@ def save_multi_view_grid(joints_data, output_path="pose_grid.png", frame_indices
             # Set view angle
             ax.view_init(elev=elev, azim=azim)
             
-            # Ensure equal aspect ratio for axes
-            # This ensures the human figure doesn't look distorted
-            ax.set_box_aspect([1, 1, 1])
+            # Try to make the plot more square-like
+            # This is a more compatible alternative to set_box_aspect
+            x_size = x_max - x_min
+            y_size = y_max - y_min
+            z_size = z_max - z_min
+            max_size = max(x_size, y_size, z_size)
+            ax.set_xlim(x_min, x_min + max_size)
+            ax.set_ylim(z_min, z_min + max_size)
+            ax.set_zlim(y_min, y_min + max_size)
     
     # Save figure
     plt.tight_layout()
@@ -281,6 +286,15 @@ def save_animated_sequence(joints_data, output_dir="pose_frames", frame_interval
     
     # Find the minimum y value for the floor
     floor_y = y_min
+    
+    # Make the axes have equal scales
+    x_size = x_max - x_min
+    y_size = y_max - y_min
+    z_size = z_max - z_min
+    max_size = max(x_size, y_size, z_size)
+    x_max = x_min + max_size
+    z_max = z_min + max_size
+    y_max = y_min + max_size
     
     # Set fixed view angle for animation
     elev, azim = 30, 45  # Default angle
@@ -353,9 +367,6 @@ def save_animated_sequence(joints_data, output_dir="pose_frames", frame_interval
         
         # Set view angle
         ax.view_init(elev=elev, azim=azim)
-        
-        # Ensure equal aspect ratio for axes
-        ax.set_box_aspect([1, 1, 1])
         
         # Save figure
         plt.tight_layout()
