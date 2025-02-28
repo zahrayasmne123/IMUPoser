@@ -1,20 +1,18 @@
 import torch
+import numpy as np
 from pathlib import Path
 import argparse
 import sys
+import os
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+
 
 def setup_environment():
     """Set up the Python environment by adding necessary paths"""
     root_dir = Path(__file__).resolve().parent.parent
     sys.path.append(str(root_dir))
     sys.path.append(str(root_dir / "src"))
-    
-    # Import necessary modules
-    from imuposer.smpl.parametricModel import ParametricModel
-    from imuposer.math.angular import r6d_to_rotation_matrix
-    
     return root_dir
 
 def load_predictions(predictions_path):
@@ -76,17 +74,25 @@ def convert_poses_to_joints(predictions, smpl_model_path=None):
     print(f"Joint positions computed with shape: {joints.shape}")
     return joints
 
-def create_animation(joints_data, output_path="animation.mp4", fps=30, interval=33.33, downsample=1):
-    """Create animation of the skeleton movement"""
+def save_sequence_as_images(joints_data, output_dir="pose_frames", frame_interval=10, view_angles=None):
+    """Save sequence as individual images instead of animation"""
+    # Create output directory
+    output_dir = Path(output_dir)
+    output_dir.mkdir(exist_ok=True, parents=True)
+    
     # Take the first sequence if multiple sequences
     if joints_data.shape[0] > 1:
         joints = joints_data[0]
     else:
         joints = joints_data.squeeze(0)
     
-    # Downsample if needed
-    if downsample > 1:
-        joints = joints[::downsample]
+    # Convert to numpy for matplotlib
+    if isinstance(joints, torch.Tensor):
+        joints = joints.detach().cpu().numpy()
+    
+    # Define default view angles if not provided
+    if view_angles is None:
+        view_angles = [(30, 45), (30, 135), (30, 225), (30, 315)]
     
     # Define connections for visualization (SMPL skeleton)
     connections = [
@@ -102,78 +108,154 @@ def create_animation(joints_data, output_path="animation.mp4", fps=30, interval=
         (7, 14), (14, 17), (17, 19), (19, 21), (21, 23)
     ]
     
-    # Create figure and 3D axes
-    fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(111, projection='3d')
-    
-    # Joint scatter plot
-    scatter = ax.scatter([], [], [], c='b', marker='o', s=20)
-    
-    # Lines for connections
-    lines = [ax.plot([], [], [], 'r-')[0] for _ in connections]
-    
     # Find data boundaries for setting axis limits
-    min_val = joints.min().item()
-    max_val = joints.max().item()
+    min_val = np.min(joints)
+    max_val = np.max(joints)
     buffer = (max_val - min_val) * 0.1  # Add 10% buffer
     
-    # Set labels and title
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    ax.set_title('IMUPoser: 3D Joint Positions')
+    # Frame count to save
+    num_frames = len(joints)
+    print(f"Saving frames at interval {frame_interval} from {num_frames} total frames")
     
-    def init():
-        ax.set_xlim([min_val - buffer, max_val + buffer])
-        ax.set_ylim([min_val - buffer, max_val + buffer])
-        ax.set_zlim([min_val - buffer, max_val + buffer])
+    # Loop through frames
+    for i in range(0, num_frames, frame_interval):
+        joint_pos = joints[i]
         
-        scatter._offsets3d = ([], [], [])
-        for line in lines:
-            line.set_data([], [])
-            line.set_3d_properties([])
+        # Save each view angle as a separate image
+        for view_idx, (elev, azim) in enumerate(view_angles):
+            # Create figure
+            fig = plt.figure(figsize=(10, 10))
+            ax = fig.add_subplot(111, projection='3d')
+            
+            # Set labels and title
+            ax.set_xlabel('X')
+            ax.set_ylabel('Y')
+            ax.set_zlabel('Z')
+            ax.set_title(f'Frame {i} - View {view_idx}')
+            
+            # Set axis limits
+            ax.set_xlim([min_val - buffer, max_val + buffer])
+            ax.set_ylim([min_val - buffer, max_val + buffer])
+            ax.set_zlim([min_val - buffer, max_val + buffer])
+            
+            # Set view angle
+            ax.view_init(elev=elev, azim=azim)
+            
+            # Plot joints
+            ax.scatter(joint_pos[:, 0], joint_pos[:, 1], joint_pos[:, 2], c='b', marker='o', s=30)
+            
+            # Plot connections
+            for start, end in connections:
+                ax.plot([joint_pos[start, 0], joint_pos[end, 0]], 
+                        [joint_pos[start, 1], joint_pos[end, 1]], 
+                        [joint_pos[start, 2], joint_pos[end, 2]], 'r-')
+            
+            # Save figure
+            plt.tight_layout()
+            output_file = output_dir / f"frame_{i:04d}_view_{view_idx}.png"
+            plt.savefig(output_file)
+            plt.close(fig)
         
-        return [scatter] + lines
+        if i % 50 == 0:
+            print(f"Saved frame {i}/{num_frames}")
     
-    def update(frame):
-        # Update joint positions
-        joint_pos = joints[frame]
-        x, y, z = joint_pos[:, 0], joint_pos[:, 1], joint_pos[:, 2]
-        scatter._offsets3d = (x, y, z)
-        
-        # Update connections
-        for i, (start, end) in enumerate(connections):
-            xs = [joint_pos[start, 0], joint_pos[end, 0]]
-            ys = [joint_pos[start, 1], joint_pos[end, 1]]
-            zs = [joint_pos[start, 2], joint_pos[end, 2]]
-            lines[i].set_data(xs, ys)
-            lines[i].set_3d_properties(zs)
-        
-        # Adjust view angle to create rotation effect
-        ax.view_init(elev=30, azim=frame % 360)
-        
-        return [scatter] + lines
+    print(f"Saved {len(list(output_dir.glob('*.png')))} frames to {output_dir}")
+    return output_dir
+
+def save_multi_view_grid(joints_data, output_path="pose_grid.png", frame_indices=None, view_angles=None):
+    """Save a grid of multiple frames and viewpoints"""
+    # Take the first sequence if multiple sequences
+    if joints_data.shape[0] > 1:
+        joints = joints_data[0]
+    else:
+        joints = joints_data.squeeze(0)
     
-    # Create animation
-    ani = FuncAnimation(
-        fig, update, frames=range(len(joints)),
-        init_func=init, blit=False, interval=interval
-    )
+    # Convert to numpy for matplotlib
+    if isinstance(joints, torch.Tensor):
+        joints = joints.detach().cpu().numpy()
     
-    print(f"Saving animation to {output_path}...")
-    ani.save(output_path, fps=fps, dpi=100, extra_args=['-vcodec', 'libx264'])
-    print(f"Animation saved successfully to {output_path}")
+    # Define default frame indices if not provided (evenly spaced)
+    if frame_indices is None:
+        total_frames = len(joints)
+        frame_indices = [int(i * total_frames / 6) for i in range(6)]
     
+    # Define default view angles if not provided
+    if view_angles is None:
+        view_angles = [(30, 0), (30, 90), (30, 180), (30, 270)]
+    
+    # Define connections for visualization (SMPL skeleton)
+    connections = [
+        # Torso
+        (0, 1), (1, 4), (4, 7), (7, 10),  # Spine
+        # Left leg
+        (0, 3), (3, 6), (6, 9), (9, 12), (12, 15),
+        # Right leg
+        (0, 2), (2, 5), (5, 8), (8, 11), (11, 14),
+        # Left arm
+        (7, 13), (13, 16), (16, 18), (18, 20), (20, 22),
+        # Right arm
+        (7, 14), (14, 17), (17, 19), (19, 21), (21, 23)
+    ]
+    
+    # Create grid figure
+    n_rows = len(frame_indices)
+    n_cols = len(view_angles)
+    fig = plt.figure(figsize=(n_cols * 4, n_rows * 4))
+    
+    # Find data boundaries for setting axis limits
+    min_val = np.min(joints)
+    max_val = np.max(joints)
+    buffer = (max_val - min_val) * 0.1  # Add 10% buffer
+    
+    # Loop through frames and views
+    for i, frame_idx in enumerate(frame_indices):
+        joint_pos = joints[frame_idx]
+        
+        for j, (elev, azim) in enumerate(view_angles):
+            # Create subplot
+            ax = fig.add_subplot(n_rows, n_cols, i*n_cols + j + 1, projection='3d')
+            
+            # Set labels
+            if i == n_rows-1:
+                ax.set_xlabel('X')
+            if j == 0:
+                ax.set_ylabel('Y')
+            
+            # Set title
+            ax.set_title(f'Frame {frame_idx} - View ({elev}°, {azim}°)')
+            
+            # Set axis limits
+            ax.set_xlim([min_val - buffer, max_val + buffer])
+            ax.set_ylim([min_val - buffer, max_val + buffer])
+            ax.set_zlim([min_val - buffer, max_val + buffer])
+            
+            # Set view angle
+            ax.view_init(elev=elev, azim=azim)
+            
+            # Plot joints
+            ax.scatter(joint_pos[:, 0], joint_pos[:, 1], joint_pos[:, 2], c='b', marker='o', s=20)
+            
+            # Plot connections
+            for start, end in connections:
+                ax.plot([joint_pos[start, 0], joint_pos[end, 0]], 
+                        [joint_pos[start, 1], joint_pos[end, 1]], 
+                        [joint_pos[start, 2], joint_pos[end, 2]], 'r-')
+    
+    # Save figure
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
     plt.close(fig)
+    
+    print(f"Saved multi-view grid to {output_path}")
     return output_path
 
 def main():
     parser = argparse.ArgumentParser(description="Visualize IMUPoser predictions")
     parser.add_argument("--predictions", type=str, default="pose_predictions.pt", help="Path to pose predictions file")
     parser.add_argument("--smpl_model", type=str, default=None, help="Path to SMPL model file")
-    parser.add_argument("--output", type=str, default="pose_animation.mp4", help="Path to save animation")
-    parser.add_argument("--fps", type=int, default=30, help="Animation frames per second")
-    parser.add_argument("--downsample", type=int, default=1, help="Downsample factor for animation")
+    parser.add_argument("--output_dir", type=str, default="pose_frames", help="Directory to save pose frames")
+    parser.add_argument("--grid", type=str, default="pose_grid.png", help="Path to save multi-view grid")
+    parser.add_argument("--frame_interval", type=int, default=10, help="Interval between saved frames")
     args = parser.parse_args()
     
     # Setup environment
@@ -185,8 +267,12 @@ def main():
     # Convert poses to joint positions
     joints = convert_poses_to_joints(predictions, args.smpl_model)
     
-    # Create and save animation
-    create_animation(joints, args.output, args.fps, 1000/args.fps, args.downsample)
+    # Save sequence as images
+    save_sequence_as_images(joints, args.output_dir, args.frame_interval)
+    
+    # Create multi-view grid of selected frames
+    frame_indices = [0, 100, 200, 300, 400, 500] if joints.shape[1] >= 500 else None
+    save_multi_view_grid(joints, args.grid, frame_indices)
     
     print("Visualization completed successfully!")
 
