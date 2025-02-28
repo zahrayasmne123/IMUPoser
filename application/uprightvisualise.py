@@ -109,8 +109,8 @@ def save_multi_view_grid(joints_data, output_path="pose_grid.png", frame_indices
     
     # Colors for different body parts
     colors = {
-        'torso': 'red',
-        'left_leg': 'green',
+        'left_leg': 'red',
+        'torso': 'green',
         'right_leg': 'blue',
         'left_arm': 'orange',
         'right_arm': 'purple'
