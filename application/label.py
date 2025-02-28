@@ -523,12 +523,12 @@ def save_animated_sequence(joints_data, output_dir="pose_frames", frame_interval
     }
     
     # Categorize connections by body part
-    left_leg_connections = [(0, 1), (1, 4), (4, 7), (7, 10)] 
-    torso_connections = [(0, 3), (3, 6), (6, 9), (9, 12), (12, 15)] 
-    right_leg_connections = [(0, 2), (2, 5), (5, 8), (8, 11)] 
-    left_arm_connections = [ (13, 16), (16, 18), (18, 20), (20, 22)]
-    right_arm_connections = [ (14, 17), (17, 19), (19, 21), (21, 23)]
-    
+    torso_connections = [(0, 1), (1, 4), (4, 7), (7, 10)]
+    left_leg_connections = [(1, 3), (3, 6), (6, 9), (9, 12)]  # Fixed to avoid hand connections
+    right_leg_connections = [(2, 5), (5, 8), (8, 11), (11, 14)]  # Fixed to avoid hand connections
+    left_arm_connections = [(10, 13), (13, 16), (16, 18), (18, 20), (20, 22)]  # Ensure correct shoulder connection
+    right_arm_connections = [(10, 14), (14, 17), (17, 19), (19, 21), (21, 23)]  # Ensure correct shoulder connection 
+        
     # Find data boundaries
     all_joints = joints.reshape(-1, 3)
     
