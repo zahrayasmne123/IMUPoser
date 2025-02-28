@@ -493,13 +493,17 @@ def create_sensor_section():
 
 
 def process_uploaded_files(uploaded_files, output_dir='output/'):
-    try:
-        st.info("Starting pipeline processing...")
-        
-        # # Run pipeline with progress updates
-        st.text("Step 1: Processing sensor data...")
-        synced_dfs, tensor = full_sensor_pipeline()
-        st.text("✓ Sensor data processed")
+    # Make sure the directory exists
+    os.makedirs('rawdata', exist_ok=True)
+    
+    # Save uploaded files to the expected location
+    for uploaded_file in uploaded_files:
+        file_name = uploaded_file.name
+        with open(os.path.join('rawdata', file_name), 'wb') as f:
+            f.write(uploaded_file.getbuffer())
+    
+    # Then continue with your pipeline
+    synced_dfs, tensor = full_sensor_pipeline()
         
         # st.text("Step 2: Running model predictions...")
         # predict()
@@ -518,17 +522,6 @@ def process_uploaded_files(uploaded_files, output_dir='output/'):
         # else:
         #     st.error(f"Visualization failed: {message}")
             
-    except Exception as e:
-        st.error(f"""
-        Error during processing: {str(e)}
-        
-        This might be due to:
-        1. Missing or corrupted model file
-        2. Incorrect file paths
-        3. Incompatible data format
-        
-        Please check the console for detailed error messages.
-        """)
-        raise
+    
         
  
