@@ -74,6 +74,8 @@ def convert_poses_to_joints(predictions, smpl_model_path=None):
 
 # Modified version of save_multi_view_grid to add joint labels
 
+# Modified version of save_multi_view_grid to add joint labels
+
 def save_multi_view_grid_with_labels(joints_data, output_path="pose_grid_labeled.png", frame_indices=None, view_angles=None):
     """Save a grid of multiple frames and viewpoints with floor and joint labels"""
     # Take the first sequence if multiple sequences
@@ -202,10 +204,7 @@ def save_multi_view_grid_with_labels(joints_data, output_path="pose_grid_labeled
             for joint_idx in range(joint_pos.shape[0]):
                 x, y, z = joint_pos[joint_idx, 0], joint_pos[joint_idx, 2], joint_pos[joint_idx, 1]
                 
-                # Plot the joint as a sphere
-                ax.scatter(x, y, z, c='b', marker='o', s=40, depthshade=True)
-                
-                # Add text label for the joint index
+                # Add text label for the joint index (no dot)
                 ax.text(x, y, z, f"{joint_idx}", fontsize=10, color='black', 
                         backgroundcolor='white', ha='center', va='center')
             
@@ -399,10 +398,7 @@ def save_animated_sequence_with_labels(joints_data, output_dir="pose_frames_labe
         for joint_idx in range(joint_pos.shape[0]):
             x, y, z = joint_pos[joint_idx, 0], joint_pos[joint_idx, 2], joint_pos[joint_idx, 1]
             
-            # Plot the joint as a sphere
-            ax.scatter(x, y, z, c='b', marker='o', s=40, depthshade=True)
-            
-            # Add text label for the joint index
+            # Add text label for the joint index (no dot)
             ax.text(x, y, z, f"{joint_idx}", fontsize=10, color='black', 
                     backgroundcolor='white', ha='center', va='center')
         
@@ -464,10 +460,12 @@ def save_animated_sequence_with_labels(joints_data, output_dir="pose_frames_labe
             print(f"Saved frame {i}/{len(joints)}")
     
     print(f"Saved labeled frames to {output_dir}")
-    print(f"To create video, use command:")
+    print("To create video, use command:")
     print(f"ffmpeg -framerate 30 -pattern_type glob -i '{output_dir}/frame_*.png' -c:v libx264 -pix_fmt yuv420p labeled_animation.mp4")
     
     return output_dir
+
+
 
 # Example of how to modify the main function to use these labeled visualization functions
 def main_with_labels():
@@ -480,7 +478,7 @@ def main_with_labels():
     args = parser.parse_args()
     
     # Setup environment
-    root_dir = setup_environment()
+
     
     # Load predictions
     predictions = load_predictions(args.predictions)
@@ -645,7 +643,7 @@ def save_animated_sequence(joints_data, output_dir="pose_frames", frame_interval
             print(f"Saved frame {i}/{len(joints)}")
     
     print(f"Saved frames to {output_dir}")
-    print(f"To create video, use command:")
+    print("To create video, use command:")
     print(f"ffmpeg -framerate 30 -pattern_type glob -i '{output_dir}/frame_*.png' -c:v libx264 -pix_fmt yuv420p animation.mp4")
     
     return output_dir
