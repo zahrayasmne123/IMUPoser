@@ -1,26 +1,27 @@
 import streamlit as st # type: ignore
 import streamlit.components.v1 as components # type: ignore
 
+def esens_collection_page():
+    """Display the eSense data collection page."""
+    
+    # Render the HTML for the eSense data collection
+    st.header("eSense Data Collection")
+    st.write("Use the web application to record data from your eSense earbuds.")
+    
+    # Import and use the render_data_collection_html function from your paste.txt
+    components.html(render_data_collection_html(), height=600)
 
-# Render Data Collection HTML: Logic for creating the ensens data collection
-# 1. CSS for rendering the esens data collection
-# 2. esense-container div - Makes buttons for connecting, recording, stopping recording and downloading data
-# 3. Collecting Data
-#     * calculateChecksum: error checking in data transmission from earbuds to  app 
-#     * startSamplingCommand: Starts IMU sampling at 50Hz, returning a byte array of 0x53 and calculated checksum.
-#     * stopSamplingCommand: Stops IMU sampling, returning a byte array with (0x00) to indicate stopping.
-#     * parseIMUData: Converts raw IMU data into 16 bit integers by scalaing and adding timestamps 
-#     * downloadData: Triggers download of CSV file with parsed IMU data and timestamp
-# 4. Data Logging 
-#     * connectToESense: Creates bluetooth connection with device beginning with eSense, connects to its GATT server,
-#     gets the specific service and characteristics needed for IMU data, and enables the start button once connecte
-#     * startSampling: Initialise IMU data sampling, enabling notifications and updates UI 
-#     * stopSampling: Stops IMU data sampling 
-# 5. Main data handing
-#     * handleIMUData: takes raw data and if recording is true, add parsed data to an array to update frontend counter 
-#     on how many samples have been collected.
+    st.markdown("*Finished collecting data? Navigate back to sensor configuration.*")
+    if st.button("← Back to Sensor Device Setup"):
+        if 'current_page' not in st.session_state:
+            st.session_state.current_page = 'main'
+        
+        st.session_state.current_page = 'main'
+        st.experimental_rerun()
 
 def render_data_collection_html():
+    """Render the HTML for eSense data collection."""
+    # Use the HTML content from your paste.txt
     return """
     <div style="padding: 20px;">
         <style>
@@ -243,21 +244,6 @@ def render_data_collection_html():
     </div>
     """
 
-
-def render_esense_data_collection():
-    st.header("eSense Data Collection")
-    st.write("Use the web application to record data from your eSense earbuds.")
-    
-    # Render the HTML using the existing function
-    components.html(render_data_collection_html(), height=600)
-
-    st.markdown("*Finished collecting data? Navigate back to sensor configuration.*")
-    if st.button("← Back to Sensor Device Setup"):
-        if 'current_page' not in st.session_state:
-            st.session_state.current_page = 'main'
-        
-        st.session_state.current_page = 'main'
-        st.experimental_rerun()
-
-# Run the page
-render_esense_data_collection()
+# This is for when the file is run directly
+if __name__ == "__main__":
+    esens_collection_page()

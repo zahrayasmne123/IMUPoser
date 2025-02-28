@@ -5,7 +5,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from frontend.pages.documentation import documentation_help_page
 from frontend.pages.analysis import data_analysis_page
 from frontend.pages.about import about_us_page
-from frontend.pages.esens_collection import render_esense_data_collection
+from frontend.pages.esens_collectionold import render_esense_data_collection
 
 # Set page configuration
 st.set_page_config(
@@ -387,7 +387,6 @@ def home_page():
         """)
 
 
-
 def main():
     """Main function to run the Streamlit app"""
     # Initialize session state for page navigation if it doesn't exist
@@ -414,8 +413,8 @@ def main():
     # Check if we need to override the page based on session state
     if st.session_state.current_page == 'esens_collection':
         # Import and display the esens collection page
-        
-        render_esense_data_collection()
+        from frontend.pages.esens_collection import esens_collection_page
+        esens_collection_page()
     else:
         # Display selected page from the sidebar
         if page == "Data Analysis":
@@ -426,6 +425,7 @@ def main():
             about_us_page()
         else:
             documentation_help_page()
+            
 if __name__ == "__main__":
     main()
 
