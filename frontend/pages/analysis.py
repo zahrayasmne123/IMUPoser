@@ -212,24 +212,62 @@ def data_analysis_page():
                 use_container_width=True
             )
             
-            if process_button:
-                with st.spinner("Processing files... This may take a few moments"):
-                    # Call your processing function with the data directory
-                    try:
-                        # result = process_uploaded_files(data_dir)
-                        st.success("Processing in progress!")
+            # Process button section
+        if process_button:
+            with st.spinner("Processing files... This may take a few moments"):
+                try:
+                    # Create output directory
+                    output_dir = "rawdata/processed"
+                    os.makedirs(output_dir, exist_ok=True)
+                    
+                    # Process the uploaded files
+                    active_devices, tensor = process_uploaded_files(data_dir, output_dir)
+                    
+                    # Show detailed success message
+                    if tensor is not None:
+                        st.success("✅ Processing complete!")
                         
-                        # # Show tensor shape and other details if available
-                        # if hasattr(result, 'shape'):
-                        #     st.info(f"Generated tensor shape: {result.shape}")
-                            
-                        #     # Optional: Visualize active devices in the tensor
-                        #     active_devices = sum(device_status.values())
-                        # st.success(f"Successfully processed data from {active_devices} device(s)")
-                            
-                    except Exception as e:
-                        st.error(f"Error during processing: {str(e)}")
-                        st.exception(e)
+                        # Display metrics in columns
+                        metrics_cols = st.columns(3)
+                        with metrics_cols[0]:
+                            st.metric("Active Devices", len(active_devices))
+                        with metrics_cols[1]:
+                            st.metric("Tensor Shape", f"{tensor.shape[0]} × {tensor.shape[1]}")
+                        with metrics_cols[2]:
+                            st.metric("Data Points", tensor.shape[0] * tensor.shape[1])
+                        
+                        # Display device list
+                        st.write("**Processed Devices:**")
+                        device_cols = st.columns(4)
+                        for i, device in enumerate(active_devices):
+                            with device_cols[i % 4]:
+                                st.success(f"✓ {device}")
+                        
+                        # Next steps
+                        st.divider()
+                        st.markdown("""
+                        ### Next Steps
+                        
+                        You can now:
+                        1. Go to the "3D Pose Video" tab to analyze the processed data
+                        2. Continue with your motion analysis using the generated tensor
+                        """)
+                        
+                        # Set session state to mark completion
+                        st.session_state.processing_complete = True
+                        st.session_state.processed_devices = active_devices
+                
+                except Exception as e:
+                    st.error(f"Error during processing: {str(e)}")
+                    st.exception(e)
+                    
+                    # Show troubleshooting tips
+                    st.warning("""
+                    **Troubleshooting Tips:**
+                    - Check that CSV files are properly formatted
+                    - Ensure all required columns are present
+                    - Verify that timestamps are consistent
+                    """)
 
     with tabs[2]:
         st.header("3D Pose Video Analysis")
@@ -582,31 +620,36 @@ def create_sensor_section():
 
 
 
-def process_uploaded_files(uploaded_files, output_dir='output/'):
+def process_uploaded_files(data_dir, output_dir='rawdata/processed'):
+    os.makedirs(output_dir, exist_ok=True)
+    st.info("Starting pipeline processing...")
+    
+    # Run the full sensor pipeline (handles all detection and processing)
+    st.text("Processing sensor data...")
+    synced_dfs, tensor = full_sensor_pipeline(data_dir=data_dir, output_path=os.path.join(output_dir, 'imuposer_data.pt'))
+    
+    # Determine which devices were active (non-None in the synced_dfs)
+    device_names = ['phone', 'earbuds', 'left_watch', 'right_watch']
+    active_device_indices = [i for i, df in enumerate(synced_dfs) if df is not None]
+    active_devices = [device_names[i] for i in active_device_indices]
+    
+    # Convert device names to more readable format
+    readable_device_names = []
+    for device in active_devices:
+        if device == "phone":
+            readable_device_names.append("Phone")
+        elif device == "earbuds":
+            readable_device_names.append("Earbuds")
+        elif device == "left_watch":
+            readable_device_names.append("Left Watch")
+        elif device == "right_watch":
+            readable_device_names.append("Right Watch")
+    
+    st.text(f"✓ Successfully processed data from {len(readable_device_names)} device(s): {', '.join(readable_device_names)}")
+    
 
-        st.info("Starting pipeline processing...")
-        
-        # # Run pipeline with progress updates
-        st.text("Step 1: Processing sensor data...")
-        synced_dfs, tensor = full_sensor_pipeline()
-        st.text("✓ Sensor data processed")
-        
-        # st.text("Step 2: Running model predictions...")
-        # predict()
-        # st.text("✓ Predictions complete")
-        
-        # st.text("Step 3: Creating visualizations...")
-        # # Use the process handler instead of direct visualization
-        # from IMUPoser.process_handler import run_visualization_process
-        
-        # pred_path = Path("data/processed_datasets/predictions.pt")
-        # success, message = run_visualization_process(pred_path)
-        
-        # if success:
-        #     st.text("✓ Visualization complete")
-        #     st.success("Processing complete!")
-        # else:
-        #     st.error(f"Visualization failed: {message}")
+    
+    return readable_device_names, tensor
             
     
         
