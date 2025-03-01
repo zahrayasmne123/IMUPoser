@@ -85,7 +85,7 @@ def data_analysis_page():
         st.header("Device Data Upload")
         
         # Create data directory
-        data_dir = "1.rawdata"
+        data_dir = "rawdata"
         os.makedirs(data_dir, exist_ok=True)
         
         # Show informational message about flexible uploads

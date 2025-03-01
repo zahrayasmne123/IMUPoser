@@ -364,5 +364,3 @@ def main():
     create_gif(frames_dir, "IMUPoser/output/output_frames.gif")
 
     print("Visualization with dots completed successfully!")
-
-main()
