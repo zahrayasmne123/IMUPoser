@@ -3,7 +3,7 @@ data/processed_imuposer_25fps
 data/raw
 # experiments
 results
-
+1.rawdata
 ProcessMocap
 
 **/__pycache__/
