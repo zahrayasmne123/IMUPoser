@@ -1,6 +1,6 @@
 import subprocess
 import os
-import torch
+import torch # type: ignore
 from process_sensor_data.imuDataPipeline import full_sensor_pipeline
 import streamlit as st # type: ignore
 import tempfile
@@ -24,7 +24,7 @@ pip install torch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1
 
 # Find the IMUPoser src directory
 SRC_DIR=""
-for dir in "./src" "../src" "/content/IMUPoser/src" "/content/src"; do
+for dir in "./src" "../src" "/IMUPoser/src" "/src"; do
     if [ -d "$dir" ]; then
         SRC_DIR="$dir"
         break
@@ -40,7 +40,7 @@ echo "Found IMUPoser src directory at: $SRC_DIR"
 
 # Install requirements if requirements.txt exists
 REQ_FILE=""
-for file in "./requirements.txt" "../requirements.txt" "/content/IMUPoser/requirements.txt" "/content/requirements.txt"; do
+for file in "./requirements.txt" "../requirements.txt" "/IMUPoser/requirements.txt" "/requirements.txt"; do
     if [ -f "$file" ]; then
         REQ_FILE="$file"
         break
@@ -110,7 +110,6 @@ def run_model_inference_subprocess(input_path, output_path, checkpoint_path, ins
     """
     import subprocess
     import os
-    import torch
     
     st.text("Running model inference via command line...")
     
@@ -132,7 +131,7 @@ def run_model_inference_subprocess(input_path, output_path, checkpoint_path, ins
             st.text("✓ Basic dependencies installed")
             
             # Find and install the src directory as a package
-            src_path = "/content/IMUPoser/src"
+            src_path = "/IMUPoser/src"
             
             if os.path.exists(src_path):
                 st.text(f"Installing IMUPoser package from {src_path}...")
@@ -148,7 +147,6 @@ def run_model_inference_subprocess(input_path, output_path, checkpoint_path, ins
                 possible_src_paths = [
                     "./src",
                     "../src",
-                    "/content/src",
                     "./IMUPoser/src"
                 ]
                 
@@ -168,7 +166,7 @@ def run_model_inference_subprocess(input_path, output_path, checkpoint_path, ins
             st.warning(f"Could not install dependencies: {str(e)}")
     
     # Find the script path
-    script_path = "/content/IMUPoser/application/run_inference.py"
+    script_path = "/IMUPoser/application/run_inference.py"
     
     if not os.path.exists(script_path):
         # Try to find the script in common locations
@@ -176,7 +174,6 @@ def run_model_inference_subprocess(input_path, output_path, checkpoint_path, ins
             "./run_inference.py",
             "./application/run_inference.py",
             "../application/run_inference.py",
-            "/content/run_inference.py"
         ]
         
         for path in possible_script_paths:
@@ -195,7 +192,6 @@ import sys
 import os
 
 # Add these paths to ensure the module can be found
-sys.path.insert(0, "/content/IMUPoser/src")
 sys.path.insert(0, "./src")
 sys.path.insert(0, "../src")
 sys.path.insert(0, ".")
@@ -233,7 +229,6 @@ except Exception as e:
         
         # Add the src directory to PYTHONPATH
         python_path = [
-            "/content/IMUPoser/src",
             "./src",
             "../src",
             os.path.dirname(script_path)
@@ -359,9 +354,7 @@ def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=T
                 os.path.abspath("checkpoint.ckpt"),  # Current directory
                 os.path.abspath("checkpoints/checkpoint.ckpt"),  # Checkpoints folder
                 os.path.abspath("./model_checkpoints/imuposer_model.ckpt"),
-                os.path.abspath("/content/checkpoint.ckpt"),  # Colab root
-                os.path.abspath("/content/IMUPoser/checkpoint.ckpt"),  # Colab project dir
-                os.path.abspath("/content/IMUPoser/checkpoints/checkpoint.ckpt")  # Nested dir
+
             ]
             
             for path in possible_paths:
@@ -419,3 +412,5 @@ def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=T
             st.text("Please check the error message above for more details.")
     
     return readable_device_names, tensor, predictions
+
+
