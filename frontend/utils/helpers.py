@@ -9,7 +9,7 @@ def run_model_inference_subprocess(input_path, output_path, checkpoint_path):
     Run the inference using subprocess to call the command line directly.
     """
     # Set the path to your run_inference.py script
-    inference_script = "run_inference.py"  # Adjust if in a different directory
+    inference_script = "application/run_inference.py"  # Adjust if in a different directory
     
     # Set the IMUPoser src path
     imuposer_src_path = "/content/IMUPoser/src"  # Change this to match your environment
