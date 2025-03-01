@@ -7,6 +7,8 @@ from frontend.analysis.joints import process_joint_angles
 from frontend.analysis.speed import process_movement_speed
 from frontend.analysis.accuracy import process_pose_accuracy
 from process_sensor_data.imuDataPipeline import full_sensor_pipeline
+from application.run_inference import run_inference,load_model
+
 import numpy as np
 import pandas as pd
 
@@ -213,19 +215,28 @@ def data_analysis_page():
             )
             
             # Process button section
+        # Process button section
         if process_button:
-            with st.spinner("Processing files... This may take a few moments"):
+            with st.spinner("Processing files and running model inference... This may take a few moments"):
                 try:
                     # Create output directory
                     output_dir = "rawdata/processed"
                     os.makedirs(output_dir, exist_ok=True)
                     
-                    # Process the uploaded files
-                    active_devices, tensor = process_uploaded_files(data_dir, output_dir)
+                    # Use a default checkpoint path - update this to your actual path
+                    checkpoint_path = "model_checkpoints/imuposer_model.ckpt"
+                    
+                    # Process the uploaded files and run inference
+                    active_devices, tensor, predictions = process_uploaded_files(
+                        data_dir, 
+                        output_dir, 
+                        run_model=True,
+                        checkpoint_path=checkpoint_path
+                    )
                     
                     # Show detailed success message
                     if tensor is not None:
-                        st.success("✅ Processing complete!")
+                        st.success("✅ Processing and inference complete!")
                         
                         # Display metrics in columns
                         metrics_cols = st.columns(3)
@@ -234,7 +245,10 @@ def data_analysis_page():
                         with metrics_cols[1]:
                             st.metric("Tensor Shape", f"{tensor.shape[0]} × {tensor.shape[1]}")
                         with metrics_cols[2]:
-                            st.metric("Data Points", tensor.shape[0] * tensor.shape[1])
+                            if predictions is not None:
+                                st.metric("Predictions", "✓ Generated")
+                            else:
+                                st.metric("Predictions", "✗ Not available")
                         
                         # Display device list
                         st.write("**Processed Devices:**")
@@ -250,12 +264,15 @@ def data_analysis_page():
                         
                         You can now:
                         1. Go to the "3D Pose Video" tab to analyze the processed data
-                        2. Continue with your motion analysis using the generated tensor
+                        2. Visualize the predicted poses
+                        3. Export results for further analysis
                         """)
                         
                         # Set session state to mark completion
                         st.session_state.processing_complete = True
                         st.session_state.processed_devices = active_devices
+                        if predictions is not None:
+                            st.session_state.predictions_available = True
                 
                 except Exception as e:
                     st.error(f"Error during processing: {str(e)}")
@@ -267,6 +284,7 @@ def data_analysis_page():
                     - Check that CSV files are properly formatted
                     - Ensure all required columns are present
                     - Verify that timestamps are consistent
+                    - Make sure the model checkpoint exists at the specified path
                     """)
 
     with tabs[2]:
@@ -620,12 +638,14 @@ def create_sensor_section():
 
 
 
-def process_uploaded_files(data_dir, output_dir='rawdata/processed'):
+def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=True, checkpoint_path=None):
+    """ Process the uploaded IMU data files using the imuDataPipeline and run inference. """
     os.makedirs(output_dir, exist_ok=True)
+    
     st.info("Starting pipeline processing...")
     
     # Run the full sensor pipeline (handles all detection and processing)
-    st.text("Processing sensor data...")
+    st.text("Step 1: Processing sensor data...")
     synced_dfs, tensor = full_sensor_pipeline(data_dir=data_dir, output_path=os.path.join(output_dir, 'imuposer_data.pt'))
     
     # Determine which devices were active (non-None in the synced_dfs)
@@ -647,10 +667,41 @@ def process_uploaded_files(data_dir, output_dir='rawdata/processed'):
     
     st.text(f"✓ Successfully processed data from {len(readable_device_names)} device(s): {', '.join(readable_device_names)}")
     
-
+    # Save tensor with metadata
+    tensor_path = os.path.join(output_dir, 'imuposer_data.pt')
+    torch.save({
+        'imu_data': tensor,
+        'active_devices': active_devices,
+        'timestamp': torch.tensor([]),  # Add timestamp if available
+    }, tensor_path)
     
-    return readable_device_names, tensor
-            
+    st.text(f"✓ Tensor shape: {tensor.shape}")
+    st.text(f"✓ Saved to: {tensor_path}")
     
+    # Run model inference if requested
+    predictions = None
+    if run_model:
+        st.text("Step 2: Running model inference...")
+        # Use default checkpoint path if none provided
+        if checkpoint_path is None:
+            # Update this path to your default checkpoint location
+            checkpoint_path = "model_checkpoints/imuposer_model.ckpt"
         
- 
+        try:
+            # Check if checkpoint exists
+            if not os.path.exists(checkpoint_path):
+                st.warning(f"Checkpoint not found at {checkpoint_path}. Skipping inference.")
+            else:
+                # Load the model
+                model = load_model(checkpoint_path, device='cpu')
+                
+                # Run inference
+                predictions_path = os.path.join(output_dir, 'predictions.pt')
+                predictions = run_inference(model, tensor_path, predictions_path, device='cpu')
+                
+                st.text(f"✓ Saved predictions to: {predictions_path}")
+        except Exception as e:
+            st.error(f"Error during model inference: {str(e)}")
+            st.text("✗ Model inference failed. Continuing with other processing steps.")
+    
+    return readable_device_names, tensor, predictions
