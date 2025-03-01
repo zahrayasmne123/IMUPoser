@@ -7,7 +7,7 @@ class Config:
                  joints_set=None, loss_type=None, mkdir=True, normalize=False,
                  r6d=False, device=None, use_joint_loss=False, use_glb_rot_loss=False,
                  use_acc_recon_loss=False, pred_joints_set=None, pred_last_frame=False,
-                 use_vposer_loss=False, use_vel_loss=False):
+                 use_vposer_loss=False, use_vel_loss=False, og_smpl_model_path=None):
         self.experiment = experiment
         self.model = model
         self.root_dir = Path(project_root_dir).absolute()
@@ -23,14 +23,15 @@ class Config:
         self.pred_last_frame = pred_last_frame
         self.use_vposer_loss = use_vposer_loss
         self.use_vel_loss = use_vel_loss
+        self.og_smpl_model_path = og_smpl_model_path or Path("/dcs/22/u2254377/cs310/IMUPoser/src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
 
         if device != None:
             if 'cpu' in device:
                 self.device = torch.device(f'cpu')
             else:
-                self.device = torch.device(f'cuda:{device}')
+                self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         else:
-            self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+            self.device = torch.device('cpu')
 
         self.build_paths()
 
@@ -39,7 +40,8 @@ class Config:
     def build_paths(self):
        
         self.smpl_model_path = self.root_dir / "src/imuposer/smpl/model.pkl" 
-        self.og_smpl_model_path = self.root_dir / "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl"
+        self.og_smpl_model_path = Path("/dcs/22/u2254377/cs310/IMUPoser/src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
+    
             
         self.raw_dip_path = Path("/content/drive/MyDrive/data/DIP_IMU")
         self.raw_amass_path = Path("/content/drive/MyDrive/data/AMASS")

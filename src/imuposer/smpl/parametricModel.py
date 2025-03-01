@@ -25,6 +25,7 @@ class ParametricModel:
         :param use_pose_blendshape: Whether to use the pose blendshape.
         :param device: torch.device, cpu or cuda.
         """
+        torch.set_default_tensor_type(torch.FloatTensor)
         with open(official_model_file, 'rb') as f:
             data = pickle.load(f, encoding='latin1')
         self._J_regressor = torch.from_numpy(data['J_regressor'].toarray()).float().to(device)
