@@ -232,7 +232,7 @@ def data_analysis_page():
                         output_dir, 
                         run_model=True,
                         checkpoint_path=checkpoint_path
-                    )
+)
                     
                     # Show detailed success message
                     if tensor is not None:
