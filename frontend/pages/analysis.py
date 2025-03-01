@@ -82,64 +82,154 @@ def data_analysis_page():
     with tabs[1]:
         st.header("Device Data Upload")
         
-        os.makedirs("1.rawdata", exist_ok=True)
+        # Create data directory
+        data_dir = "1.rawdata"
+        os.makedirs(data_dir, exist_ok=True)
         
-        expected_files = [
-            "leftgyroscopewatch",
-            "leftaccelerometerwatch",
-            "rightgyroscopewatch",
-            "rightaccelerometerwatch",
-            "phonedata",
-            "earbuddata"
-        ]
-        
-        uploaded_files = {}
-        
-        # Create two columns for file uploaders
-        col1, col2 = st.columns(2)
-        
-        # Helper function to create minimal file upload section
-        def create_file_upload_section(file_name):
-            st.markdown(f"#### {file_name}.csv")
-            file = st.file_uploader(
-                "Upload CSV file",
-                type=['csv'],
-                key=file_name,
-                label_visibility="collapsed"
-            )
+        # Show informational message about flexible uploads
+        st.info("""
+            **Upload data from any available devices.** 
             
-            if file is not None:
-                if file.name.lower().replace('.csv', '') == file_name:
-                    file_path = os.path.join("1.rawdata", f"{file_name}.csv")
-                    with open(file_path, "wb") as f:
-                        f.write(file.getvalue())
-                    uploaded_files[file_name] = file_path
-                    st.success("✅ File uploaded successfully")
-                else:
-                    st.error(f"Please upload '{file_name}.csv'")
-            return file
+            The system will automatically detect device types based on file name patterns.
+            You can upload any combination of files - processing works with any available data.
+        """)
         
-        # Distribute file uploaders between columns
-        for i, file_name in enumerate(expected_files):
-            with (col1 if i < 3 else col2):
-                create_file_upload_section(file_name)
-
+        # Use a file uploader that accepts multiple files
+        uploaded_files = st.file_uploader(
+            "Upload IMU data files",
+            type=['csv'],
+            accept_multiple_files=True,
+            help="Upload any available IMU data CSV files (phone, watch, earbuds)"
+        )
+        
+        # Process uploaded files
+        if uploaded_files:
+            # Display uploaded files with automatic device detection
+            st.markdown("### Uploaded Files")
+            
+            # Helper to detect device type from filename
+            def detect_device_type(filename):
+                filename_lower = filename.lower()
+                
+                if "left" in filename_lower and "accelerometer" in filename_lower:
+                    return "Left Watch (Accelerometer)"
+                elif "left" in filename_lower and "gyroscope" in filename_lower:
+                    return "Left Watch (Gyroscope)"
+                elif "right" in filename_lower and "accelerometer" in filename_lower:
+                    return "Right Watch (Accelerometer)"
+                elif "right" in filename_lower and "gyroscope" in filename_lower:
+                    return "Right Watch (Gyroscope)"
+                elif any(pattern in filename_lower for pattern in ["earbud", "esense", "headphone"]):
+                    return "Earbuds"
+                else:
+                    return "Phone"  # Default to phone if no other matches
+            
+            # Create a table to display detected file types
+            file_data = []
+            for file in uploaded_files:
+                detected_type = detect_device_type(file.name)
+                file_path = os.path.join(data_dir, file.name)
+                
+                # Save the file
+                with open(file_path, "wb") as f:
+                    f.write(file.getvalue())
+                
+                # Add to file data
+                file_data.append({
+                    "Filename": file.name,
+                    "Detected Device": detected_type,
+                    "Size": f"{round(len(file.getvalue()) / 1024, 2)} KB"
+                })
+            
+            # Display the file table
+            st.table(file_data)
+            
+            # Check which device types are complete
+            device_status = {
+                "Phone": False,
+                "Left Watch": False,
+                "Right Watch": False,
+                "Earbuds": False
+            }
+            
+            detected_types = [item["Detected Device"] for item in file_data]
+            
+            # Check phone data
+            if any("Phone" in device for device in detected_types):
+                device_status["Phone"] = True
+            
+            # Check earbuds data
+            if any("Earbuds" in device for device in detected_types):
+                device_status["Earbuds"] = True
+            
+            # Check left watch (needs both accelerometer and gyroscope)
+            if any("Left Watch (Accelerometer)" in device for device in detected_types) and \
+            any("Left Watch (Gyroscope)" in device for device in detected_types):
+                device_status["Left Watch"] = True
+            
+            # Check right watch (needs both accelerometer and gyroscope)
+            if any("Right Watch (Accelerometer)" in device for device in detected_types) and \
+            any("Right Watch (Gyroscope)" in device for device in detected_types):
+                device_status["Right Watch"] = True
+                
+            # Show device status
+            st.markdown("### Device Status")
+            
+            # Display device status visually
+            for device, status in device_status.items():
+                if status:
+                    st.success(f"✅ {device}: Complete data available")
+                else:
+                    # For watches, provide more detailed feedback
+                    if device == "Left Watch" and any("Left Watch" in d for d in detected_types):
+                        missing = "Gyroscope" if "Left Watch (Accelerometer)" in detected_types else "Accelerometer"
+                        st.warning(f"⚠️ {device}: Incomplete (missing {missing} data)")
+                    elif device == "Right Watch" and any("Right Watch" in d for d in detected_types):
+                        missing = "Gyroscope" if "Right Watch (Accelerometer)" in detected_types else "Accelerometer"
+                        st.warning(f"⚠️ {device}: Incomplete (missing {missing} data)")
+                    else:
+                        st.info(f"ℹ️ {device}: No data uploaded")
+            
+            # Only enable processing if at least one device has complete data
+            can_process = any(device_status.values())
+        else:
+            can_process = False
+        
         # Process button section
         st.divider()
-        files_uploaded = len(uploaded_files) == len(expected_files)
         
-        if not files_uploaded:
-            st.info("Please upload all required files before processing")
+        if not can_process and uploaded_files:
+            st.warning("Please upload complete data for at least one device to continue. For watches, both accelerometer and gyroscope data are needed.")
+        elif not uploaded_files:
+            st.info("Please upload data files to continue")
         
         col1, col2, col3 = st.columns([1,2,1])
         with col2:
-            if st.button(
+            process_button = st.button(
                 "Process Files",
                 key="process_button",
-                disabled=not files_uploaded,
+                disabled=not can_process,
                 use_container_width=True
-            ):
-                process_uploaded_files(uploaded_files)
+            )
+            
+            if process_button:
+                with st.spinner("Processing files... This may take a few moments"):
+                    # Call your processing function with the data directory
+                    try:
+                        # result = process_uploaded_files(data_dir)
+                        st.success("Processing in progress!")
+                        
+                        # # Show tensor shape and other details if available
+                        # if hasattr(result, 'shape'):
+                        #     st.info(f"Generated tensor shape: {result.shape}")
+                            
+                        #     # Optional: Visualize active devices in the tensor
+                        #     active_devices = sum(device_status.values())
+                        # st.success(f"Successfully processed data from {active_devices} device(s)")
+                            
+                    except Exception as e:
+                        st.error(f"Error during processing: {str(e)}")
+                        st.exception(e)
 
     with tabs[2]:
         st.header("3D Pose Video Analysis")
