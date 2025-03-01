@@ -108,6 +108,10 @@ def run_model_inference_subprocess(input_path, output_path, checkpoint_path, ins
     """
     Run the inference using subprocess to call the command line directly.
     """
+    import subprocess
+    import os
+    import torch
+    
     st.text("Running model inference via command line...")
     
     # Make sure the directories exist
@@ -120,15 +124,15 @@ def run_model_inference_subprocess(input_path, output_path, checkpoint_path, ins
             # Install pytorch_lightning and other dependencies
             subprocess.check_call([
                 "pip", "install", 
-                "pytorch_lightning==1.5.0",
+                "pytorch_lightning==1.6.5",  # Match the version from your requirements.txt
                 "einops",
                 "torchvision",
                 "--quiet"
             ])
             st.text("✓ Basic dependencies installed")
             
-            # Now, install the src directory as a package
-            src_path = "/content/IMUPoser/src"  # Update this to match your environment
+            # Find and install the src directory as a package
+            src_path = "/content/IMUPoser/src"
             
             if os.path.exists(src_path):
                 st.text(f"Installing IMUPoser package from {src_path}...")
@@ -163,10 +167,9 @@ def run_model_inference_subprocess(input_path, output_path, checkpoint_path, ins
         except Exception as e:
             st.warning(f"Could not install dependencies: {str(e)}")
     
-    # The command to run
-    script_path = "/content/IMUPoser/application/run_inference.py"  # Update this to the correct path
+    # Find the script path
+    script_path = "/content/IMUPoser/application/run_inference.py"
     
-    # Check if the script exists at the specified path
     if not os.path.exists(script_path):
         # Try to find the script in common locations
         possible_script_paths = [
@@ -185,38 +188,90 @@ def run_model_inference_subprocess(input_path, output_path, checkpoint_path, ins
             st.error("Could not find run_inference.py script. Please specify the correct path.")
             return False, "Inference script not found"
     
-    # The command to run
-    cmd = [
-        "python", 
-        script_path,
-        "--checkpoint", checkpoint_path,
-        "--input", input_path,
-        "--output", output_path,
-        "--device", "cpu"
-    ]
+    # Create a wrapper script that modifies sys.path before importing
+    # This is a workaround for import issues
+    wrapper_script = """
+import sys
+import os
+
+# Add these paths to ensure the module can be found
+sys.path.insert(0, "/content/IMUPoser/src")
+sys.path.insert(0, "./src")
+sys.path.insert(0, "../src")
+sys.path.insert(0, ".")
+sys.path.insert(0, "..")
+
+# Import the main module and run it
+import runpy
+sys.argv = ['run_inference.py', '--checkpoint', '{checkpoint}', '--input', '{input}', '--output', '{output}', '--device', 'cpu']
+try:
+    runpy.run_path('{script_path}', run_name='__main__')
+except Exception as e:
+    import traceback
+    print("ERROR:", str(e))
+    print(traceback.format_exc())
+    sys.exit(1)
+    """.format(
+        checkpoint=checkpoint_path,
+        input=input_path,
+        output=output_path,
+        script_path=script_path
+    )
     
-    # Show command
-    st.text(f"Running command: {' '.join(cmd)}")
+    # Write the wrapper script to a temporary file
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix='.py', delete=False) as temp:
+        temp_path = temp.name
+        temp.write(wrapper_script.encode())
     
     try:
-        # Run the process
+        # Run the wrapper script
+        st.text("Running inference with adjusted Python path...")
+        
+        # Create the environment with the correct PYTHONPATH
+        env = os.environ.copy()
+        
+        # Add the src directory to PYTHONPATH
+        python_path = [
+            "/content/IMUPoser/src",
+            "./src",
+            "../src",
+            os.path.dirname(script_path)
+        ]
+        
+        if "PYTHONPATH" in env:
+            env["PYTHONPATH"] = ":".join(python_path) + ":" + env["PYTHONPATH"]
+        else:
+            env["PYTHONPATH"] = ":".join(python_path)
+        
+        st.text(f"Using PYTHONPATH: {env.get('PYTHONPATH')}")
+        
+        # Run the process with the enhanced environment
         process = subprocess.Popen(
-            cmd,
+            ["python", temp_path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,
+            env=env,
             bufsize=1
         )
         
         # Process output
+        stdout_lines = []
+        stderr_lines = []
+        
+        # Process stdout
         for line in iter(process.stdout.readline, ''): # type: ignore
             if not line:
                 break
+            stdout_lines.append(line.strip())
             st.text(f"[INFO] {line.strip()}")
         
+        # Process stderr
         for line in iter(process.stderr.readline, ''): # type: ignore
             if not line:
                 break
+            stderr_lines.append(line.strip())
             st.text(f"[ERROR] {line.strip()}")
         
         # Wait for process to complete
@@ -233,15 +288,17 @@ def run_model_inference_subprocess(input_path, output_path, checkpoint_path, ins
             except Exception as e:
                 return True, f"Inference successful but couldn't load predictions: {str(e)}"
         else:
+            error_msg = "\n".join(stderr_lines) if stderr_lines else "Unknown error"
             st.error(f"Command failed with return code {process.returncode}")
-            return False, "Inference failed"
+            return False, error_msg
             
     except Exception as e:
         st.error(f"Error running inference command: {str(e)}")
         return False, str(e)
-
-
-
+    finally:
+        # Clean up the temporary file
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
 
 def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=True, checkpoint_path=None):
