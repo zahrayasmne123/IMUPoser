@@ -6,8 +6,8 @@ import torch
 from frontend.analysis.joints import process_joint_angles
 from frontend.analysis.speed import process_movement_speed
 from frontend.analysis.accuracy import process_pose_accuracy
-from process_sensor_data.imuDataPipeline import full_sensor_pipeline
-from application.run_inference import run_inference,load_model
+from frontend.utils.helpers import process_uploaded_files
+
 
 import numpy as np
 import pandas as pd
@@ -636,72 +636,3 @@ def create_sensor_section():
                 st.session_state.esense_step = 0
                 st.experimental_rerun()
 
-
-
-def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=True, checkpoint_path=None):
-    """ Process the uploaded IMU data files using the imuDataPipeline and run inference. """
-    os.makedirs(output_dir, exist_ok=True)
-    
-    st.info("Starting pipeline processing...")
-    
-    # Run the full sensor pipeline (handles all detection and processing)
-    st.text("Step 1: Processing sensor data...")
-    synced_dfs, tensor = full_sensor_pipeline(data_dir=data_dir, output_path=os.path.join(output_dir, 'imuposer_data.pt'))
-    
-    # Determine which devices were active (non-None in the synced_dfs)
-    device_names = ['phone', 'earbuds', 'left_watch', 'right_watch']
-    active_device_indices = [i for i, df in enumerate(synced_dfs) if df is not None]
-    active_devices = [device_names[i] for i in active_device_indices]
-    
-    # Convert device names to more readable format
-    readable_device_names = []
-    for device in active_devices:
-        if device == "phone":
-            readable_device_names.append("Phone")
-        elif device == "earbuds":
-            readable_device_names.append("Earbuds")
-        elif device == "left_watch":
-            readable_device_names.append("Left Watch")
-        elif device == "right_watch":
-            readable_device_names.append("Right Watch")
-    
-    st.text(f"✓ Successfully processed data from {len(readable_device_names)} device(s): {', '.join(readable_device_names)}")
-    
-    # Save tensor with metadata
-    tensor_path = os.path.join(output_dir, 'imuposer_data.pt')
-    torch.save({
-        'imu_data': tensor,
-        'active_devices': active_devices,
-        'timestamp': torch.tensor([]),  # Add timestamp if available
-    }, tensor_path)
-    
-    st.text(f"✓ Tensor shape: {tensor.shape}")
-    st.text(f"✓ Saved to: {tensor_path}")
-    
-    # Run model inference if requested
-    predictions = None
-    if run_model:
-        st.text("Step 2: Running model inference...")
-        # Use default checkpoint path if none provided
-        if checkpoint_path is None:
-            # Update this path to your default checkpoint location
-            checkpoint_path = "checkpoints/checkpoint.ckpt"
-        
-        try:
-            # Check if checkpoint exists
-            if not os.path.exists(checkpoint_path):
-                st.warning(f"Checkpoint not found at {checkpoint_path}. Skipping inference.")
-            else:
-                # Load the model
-                model = load_model(checkpoint_path, device='cpu')
-                
-                # Run inference
-                predictions_path = os.path.join(output_dir, 'predictions.pt')
-                predictions = run_inference(model, tensor_path, predictions_path, device='cpu')
-                
-                st.text(f"✓ Saved predictions to: {predictions_path}")
-        except Exception as e:
-            st.error(f"Error during model inference: {str(e)}")
-            st.text("✗ Model inference failed. Continuing with other processing steps.")
-    
-    return readable_device_names, tensor, predictions
