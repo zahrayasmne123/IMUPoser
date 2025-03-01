@@ -37,10 +37,10 @@ class Config:
         self.loss_type = loss_type
     
     def build_paths(self):
-        self.smpl_model_path = self.root_dir / "src/imuposer/smpl/model.pkl"
-        self.og_smpl_model_path = Path("/content/IMUPoser/src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
-        
-         
+       
+        self.smpl_model_path = self.root_dir / "src/imuposer/smpl/model.pkl" 
+        self.og_smpl_model_path = self.root_dir / "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl"
+            
         self.raw_dip_path = Path("/content/drive/MyDrive/data/DIP_IMU")
         self.raw_amass_path = Path("/content/drive/MyDrive/data/AMASS")
 
