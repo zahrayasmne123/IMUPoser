@@ -5,9 +5,12 @@ data/raw
 results
 1.rawdata
 ProcessMocap
+rawdata
 
 **/__pycache__/
 **/lightning_logs/
 **/wandb/
 **/*.egg-info/
 **/.ipynb_checkpoints/
+pose_frames_dots
+pose_grid_dots.png
