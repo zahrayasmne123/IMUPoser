@@ -685,7 +685,7 @@ def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=T
         # Use default checkpoint path if none provided
         if checkpoint_path is None:
             # Update this path to your default checkpoint location
-            checkpoint_path = "model_checkpoints/imuposer_model.ckpt"
+            checkpoint_path = "checkpoints/checkpoint.ckpt"
         
         try:
             # Check if checkpoint exists
