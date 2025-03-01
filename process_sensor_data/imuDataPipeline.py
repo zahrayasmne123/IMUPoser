@@ -1,10 +1,10 @@
-from phone_processor import PhoneSensorAligner
-from watch_processor import WatchSensorAligner
-from earbuds_processor import EarbudSensorAligner
-from rotation_processor import robust_rotation_matrices_dataframes
-from synchronise_dataframes import robust_synchronise_dataframes
-from csvtotensor import create_IMUPoser_tensor
-from trim_timestamps import trim_dataframes
+from .phone_processor import PhoneSensorAligner
+from .watch_processor import WatchSensorAligner
+from .earbuds_processor import EarbudSensorAligner
+from .rotation_processor import robust_rotation_matrices_dataframes
+from .synchronise_dataframes import robust_synchronise_dataframes
+from .csvtotensor import create_IMUPoser_tensor
+from .trim_timestamps import trim_dataframes
 import pandas as pd
 
 def find_sensor_files(data_directory):
