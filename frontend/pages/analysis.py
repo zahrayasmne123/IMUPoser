@@ -224,7 +224,7 @@ def data_analysis_page():
                     os.makedirs(output_dir, exist_ok=True)
                     
                     # Use a default checkpoint path - update this to your actual path
-                    checkpoint_path = "model_checkpoints/imuposer_model.ckpt"
+                    checkpoint_path = "checkpoints/checkpoint.ckpt"
                     
                     # Process the uploaded files and run inference
                     active_devices, tensor, predictions = process_uploaded_files(
