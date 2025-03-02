@@ -272,7 +272,7 @@ def save_animated_sequence_with_dots(
 # Convert poses to joint positions
 def convert_poses_to_joints(
     predictions,
-    smpl_model_path= os.path.join(base_dir, "/src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
+    smpl_model_path= os.path.join(base_dir, "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
 ):
     """Convert pose predictions to 3D joint positions using SMPL"""
 
