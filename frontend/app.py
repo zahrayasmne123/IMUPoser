@@ -332,7 +332,7 @@ def home_page():
         st.markdown("""
             ### Analyzing Your Results
             - Process raw data
-            - Generate 3D visualizations
+            - Generate 3D visualisations
             - Apply analysis algorithms
             - Review motion patterns
         """)
@@ -341,7 +341,7 @@ def home_page():
         st.markdown("""
             ### Generating Reports
             - Create detailed summaries
-            - Export visualizations
+            - Export visualisations
             - Share results securely
             - Track progress over time
         """)
@@ -364,7 +364,7 @@ def home_page():
     
 
     
-    # Add some example visualizations or statistics for the homepage
+    # Add some example visualisations or statistics for the homepage
     st.subheader("System Overview")
     col1, col2 = st.columns(2)
     
