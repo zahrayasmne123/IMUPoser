@@ -11,7 +11,7 @@ from frontend.utils.helpers import process_uploaded_files
 
 import numpy as np
 import pandas as pd
-
+base_dir = "/dcs/22/u2254377/cs310/IMUPoser"
 ############# DATA ANALYSIS PAGE ######################
 
 def data_analysis_page():
@@ -288,139 +288,332 @@ def data_analysis_page():
                     """)
 
     with tabs[2]:
-        st.header("3D Pose Video Analysis")
+        st.header("3D Pose visualisation")
         
-        video_files = sorted(list(Path('.').glob('*.mp4')))
-        if not video_files:
-            st.warning("No MP4 files found in the current directory.")
-        else:
-            selected_video = st.selectbox(
-                "Select video file:",
-                options=video_files,
-                format_func=lambda x: x.name
-            )
+        col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            # Section for visualisation frames carousel
+            st.subheader("Pose Frames")
             
-            if selected_video:
-                try:
-                    # Create two columns for video and stats
-                    video_col, stats_col = st.columns([1, 1])
+            # Check if frames directory exists
+            frames_dir = os.path.join(base_dir,"/output/pose_frames_dots")
+            if os.path.exists(frames_dir):
+                # Get all PNG files in the directory
+                frame_files = sorted([f for f in os.listdir(frames_dir) if f.endswith('.png')])
+                
+                if frame_files:
+                    # Create a custom carousel
+                    st.write("Use the slider to navigate through pose frames:")
                     
-                    with video_col:
-                        # Video display
-                        st.video(str(selected_video))
+                    # Frame selection slider
+                    selected_frame_idx = st.slider(
+                        "Frame", 
+                        min_value=0, 
+                        max_value=len(frame_files)-1, 
+                        value=0,
+                        key="frame_slider"
+                    )
                     
-                    with stats_col:
-                        # Get video information
-                        video = cv2.VideoCapture(str(selected_video))
-                        fps = video.get(cv2.CAP_PROP_FPS)
-                        frame_count = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-                        duration = frame_count/fps
+                    # Display the selected frame
+                    selected_frame_path = os.path.join(frames_dir, frame_files[selected_frame_idx])
+                    st.image(selected_frame_path, use_column_width=True, caption=f"Frame {selected_frame_idx+1}/{len(frame_files)}")
+                    
+    
+                    # Additional controls
+                    with st.expander("Frame Controls", expanded=False):
+                        # Option to download the current frame
+                        with open(selected_frame_path, "rb") as file:
+                            st.download_button(
+                                label="Download Current Frame",
+                                data=file,
+                                file_name=f"pose_frame_{selected_frame_idx}.png",
+                                mime="image/png"
+                            )
                         
-                        st.subheader("Video Statistics")
+                        # Option to view the GIF
+                        gif_path = os.path.join(base_dir, "output/output_frames.gif")
+                        if os.path.exists(gif_path):
+                            st.write("Full Animation:")
+                            st.image(gif_path, use_column_width=True)
+                            
+                            with open(gif_path, "rb") as file:
+                                st.download_button(
+                                    label="Download Animation GIF",
+                                    data=file,
+                                    file_name="pose_animation.gif",
+                                    mime="image/gif",
+                                    key="gif_download"
+                                )
+  
+        with col2:
+            # Section for multi-view grid and analysis
+            st.subheader("Multi-View Analysis")
+            
+            # Display the multi-view grid if available
+            grid_path = os.path.join(base_dir, "/output/pose_grid_dots.png")
+            if os.path.exists(grid_path):
+                st.image(grid_path, use_column_width=True, caption="Multi-view pose grid")
+                
+                # Add download button for the grid
+                with open(grid_path, "rb") as file:
+                    st.download_button(
+                        label="Download Grid Image",
+                        data=file,
+                        file_name="pose_grid.png",
+                        mime="image/png",
+                        key="grid_download"
+                    )
+            else:
+                st.info("Multi-view grid not available. Generate visualisations to create it.")
+            
+        
+        # Analysis section below the two columns
+        st.divider()
+        st.subheader("Pose Analysis Results")
+        
+        # Create tabs for different analysis types
+        analysis_tabs = st.tabs(["Joint Angles", "Movement Speed", "Pose Accuracy"])
+        
+        with analysis_tabs[0]:  # Joint Angles
+            try:
+                # Load predictions
+                predictions_path = os.path.join(base_dir, '/rawdata/processed/predictions.pt')
+                if os.path.exists(predictions_path):
+                    predictions = torch.load(predictions_path)
+                    st.write("### Joint Angle Analysis")
+                    st.write("The joint angle analysis shows how the angles between connected body segments change over time using the dot product. For example the knee angle is calculated between hip, knee and ankle joint and the elbow joint is calculated between the shoulder, elbow and wrist joint.")
+
+                    # Add debug information
+                    if isinstance(predictions, dict) and 'joints' in predictions: 
+                        angles = process_joint_angles(predictions)
                         
-                        # Display metrics vertically in the stats column
-                        st.metric("FPS", f"{fps:.2f}")
-                        st.metric("Total Frames", frame_count)
-                        st.metric("Duration", f"{duration:.2f} seconds")
+                        # Create columns for joint angles
+                        angle_cols = st.columns(3)
+                        col_idx = 0
                         
-                        # Additional information
-                        st.divider()
-                        st.subheader("Analysis Results")
-                        st.info("Select options below to analyze the video:")
+                        for joint, angle_values in angles.items():
+                            with angle_cols[col_idx % 3]:
+                                st.metric(
+                                    f"{joint.replace('_', ' ').title()}",
+                                    f"{np.mean(angle_values):.2f}°",
+                                    f"Max: {np.max(angle_values):.2f}°"
+                                )
+                            col_idx += 1
                         
-                        analysis_type = st.selectbox(
-                            "Choose Analysis Type",
-                            ["Joint Angles", "Movement Speed", "Pose Accuracy"]
+                        # Plot selected joint angles over time
+                        st.write("### Joint Angles Over Time")
+                        selected_joints = st.multiselect(
+                            "Select joints to display:",
+                            options=list(angles.keys()),
+                            default=list(angles.keys())[:2]
                         )
                         
-                        if analysis_type == "Joint Angles":
-                            try:
-                                # Load predictions
-                                predictions = torch.load('rawdata/processed_dataset/predictions.pt')
-                                st.write("### Joint Angle Analysis")
-                                st.write("The joint angle analysis shows how the angles between connected body segments change over time using the dot product. For example the knee angle is calculated between hip, knee and ankle joint and the elbow joint is calculated between the shoulder, elbow and wrist joint.")
+                        if selected_joints:
+                            angle_data = {joint: angles[joint] for joint in selected_joints}
+                            angle_df = pd.DataFrame(angle_data)
+                            st.line_chart(angle_df)
+                else:
+                    st.info("No predictions data found. Please process your data first.")
+                    
+            except Exception as e:
+                st.error(f"Error processing joint angles: {str(e)}")
+                st.write("Error details:", str(e))
+        
+        with analysis_tabs[1]:  # Movement Speed
+            try:
+                # Load predictions
+                predictions_path = os.path.join(base_dir, '/rawdata/processed/predictions.pt')
+                if os.path.exists(predictions_path):
+                    predictions = torch.load(predictions_path)
+                    
+                    speeds, stats = process_movement_speed(predictions)
+                    
+                    # Create chart data
+                    speed_data = pd.DataFrame(speeds)
+                    
+                    # Display the line chart
+                    st.write("### Movement Speed Analysis")
+                    st.write("The speed graph shows the velocity (in centimeters per second) of different key body parts over time throughout your motion sequence.")
+                    
+                    # Create columns for movement metrics
+                    metric_cols = st.columns(len(stats) if stats else 3)
+                    
+                    for i, (part, part_stats) in enumerate(stats.items()):
+                        with metric_cols[i % len(metric_cols)]:
+                            st.metric(
+                                f"{part.replace('_', ' ').title()}",
+                                f"{part_stats['average']:.2f} cm/s",
+                                f"Peak: {part_stats['max']:.2f} cm/s"
+                            )
+                    
+                    # Display chart with options
+                    selected_parts = st.multiselect(
+                        "Select body parts to display:",
+                        options=list(speed_data.columns),
+                        default=list(speed_data.columns)[:3]
+                    )
+                    
+                    if selected_parts:
+                        filtered_data = speed_data[selected_parts]
+                        st.line_chart(filtered_data)
+                        
+                    st.write("**Interpretation Guide:**")
+                    st.write("- **Peaks in the graph:** These represent moments of fast movement for that body part")
+                    st.write("- **Valleys or low points:** These show when that body part is moving slowly or is relatively still")
+                else:
+                    st.info("No predictions data found. Please process your data first.")
+                    
+            except Exception as e:
+                st.error(f"Error processing movement speeds: {str(e)}")
+                import traceback
+                with st.expander("See detailed error information", expanded=False):
+                    st.write("Full error details:", str(e))
+                    st.write("Traceback:", traceback.format_exc())
+        
+        with analysis_tabs[2]:  # Pose Accuracy
+            try:
+                # Load predictions
+                predictions_path = os.path.join(base_dir, '/rawdata/processed/predictions.pt')
+                if os.path.exists(predictions_path):
+                    predictions = torch.load(predictions_path)
+                    
+                    # Process pose accuracy
+                    metrics, stats = process_pose_accuracy(predictions)
+                    
+                    # Show statistics
+                    st.write("### Accuracy Statistics")
+                    
+                    # Create columns for each metric
+                    cols = st.columns(len(stats) if stats else 3)
+                    
+                    for i, (metric, metric_stats) in enumerate(stats.items()):
+                        with cols[i % len(cols)]:
+                            st.metric(
+                                label=metric.replace('_', ' ').title(),
+                                value=f"{metric_stats['average']:.2f}",
+                                delta=f"Range: {metric_stats['min']:.2f} - {metric_stats['max']:.2f}"
+                            )
+                    
+                    # Show time-series data if available
+                    if metrics and isinstance(metrics, dict):
+                        st.write("### Metrics Over Time")
+                        metrics_df = pd.DataFrame(metrics)
+                        st.line_chart(metrics_df)
+                    
+                    # Detailed explanation
+                    with st.expander("Metrics Explanation", expanded=False):
+                        st.write("""
+                        - **Smoothness**: Measures motion smoothness, indicating control and coordination
+                        - **Symmetry Score**: Measures left-right body symmetry and can help to detect muscle imbalances 
+                        - **Posture Score**: Measures overall posture alignment, this is important as poor posture can lead to back pain and neck strain
+                        """)
+                else:
+                    st.info("No predictions data found. Please process your data first.")
+                    
+            except Exception as e:
+                st.error(f"Error processing pose accuracy: {str(e)}")
+                with st.expander("See detailed error information", expanded=False):
+                    st.write("Error details:", str(e))
+        
+        
+        with analysis_tabs[1]:  # Movement Speed
+            try:
+                # Load predictions
+                predictions_path = os.path.join(base_dir, '/rawdata/processed/predictions.pt')
+                if os.path.exists(predictions_path):
+                    predictions = torch.load(predictions_path)
+                    
+                    speeds, stats = process_movement_speed(predictions)
+                    
+                    # Create chart data
+                    speed_data = pd.DataFrame(speeds)
+                    
+                    # Display the line chart
+                    st.write("### Movement Speed Analysis")
+                    st.write("The speed graph shows the velocity (in centimeters per second) of different key body parts over time throughout your motion sequence.")
+                    
+                    # Create columns for movement metrics
+                    metric_cols = st.columns(len(stats) if stats else 3)
+                    
+                    for i, (part, part_stats) in enumerate(stats.items()):
+                        with metric_cols[i % len(metric_cols)]:
+                            st.metric(
+                                f"{part.replace('_', ' ').title()}",
+                                f"{part_stats['average']:.2f} cm/s",
+                                f"Peak: {part_stats['max']:.2f} cm/s"
+                            )
+                    
+                    # Display chart with options
+                    selected_parts = st.multiselect(
+                        "Select body parts to display:",
+                        options=list(speed_data.columns),
+                        default=list(speed_data.columns)[:3]
+                    )
+                    
+                    if selected_parts:
+                        filtered_data = speed_data[selected_parts]
+                        st.line_chart(filtered_data)
+                        
+                    st.write("**Interpretation Guide:**")
+                    st.write("- **Peaks in the graph:** These represent moments of fast movement for that body part")
+                    st.write("- **Valleys or low points:** These show when that body part is moving slowly or is relatively still")
+                else:
+                    st.info("No predictions data found. Please process your data first.")
+                    
+            except Exception as e:
+                st.error(f"Error processing movement speeds: {str(e)}")
+                import traceback
+                with st.expander("See detailed error information", expanded=False):
+                    st.write("Full error details:", str(e))
+                    st.write("Traceback:", traceback.format_exc())
+        
+        with analysis_tabs[2]:  # Pose Accuracy
+            try:
+                # Load predictions
+                predictions_path = os.path.join(base_dir, '/rawdata/processed/predictions.pt')
+                if os.path.exists(predictions_path):
+                    predictions = torch.load(predictions_path)
+                    
+                    # Process pose accuracy
+                    metrics, stats = process_pose_accuracy(predictions)
+                    
+                    # Show statistics
+                    st.write("### Accuracy Statistics")
+                    
+                    # Create columns for each metric
+                    cols = st.columns(len(stats) if stats else 3)
+                    
+                    for i, (metric, metric_stats) in enumerate(stats.items()):
+                        with cols[i % len(cols)]:
+                            st.metric(
+                                label=metric.replace('_', ' ').title(),
+                                value=f"{metric_stats['average']:.2f}",
+                                delta=f"Range: {metric_stats['min']:.2f} - {metric_stats['max']:.2f}"
+                            )
+                    
+                    # Show time-series data if available
+                    if metrics and isinstance(metrics, dict):
+                        st.write("### Metrics Over Time")
+                        metrics_df = pd.DataFrame(metrics)
+                        st.line_chart(metrics_df)
+                    
+                    # Detailed explanation
+                    with st.expander("Metrics Explanation", expanded=False):
+                        st.write("""
+                        - **Smoothness**: Measures motion smoothness, indicating control and coordination
+                        - **Symmetry Score**: Measures left-right body symmetry and can help to detect muscle imbalances 
+                        - **Posture Score**: Measures overall posture alignment, this is important as poor posture can lead to back pain and neck strain
+                        """)
+                else:
+                    st.info("No predictions data found. Please process your data first.")
+                    
+            except Exception as e:
+                st.error(f"Error processing pose accuracy: {str(e)}")
+                with st.expander("See detailed error information", expanded=False):
+                    st.write("Error details:", str(e))
 
 
-                                # Add debug information
-                                if isinstance(predictions, dict) and 'joints' in predictions: 
-                                    angles = process_joint_angles(predictions)
-                                    for joint, angle_values in angles.items():
-                                        st.write(f"**{joint.replace('_', ' ').title()}**")
-                                        st.write(f"- Average angle: {np.mean(angle_values):.2f}°")
-                                        
-                            except Exception as e:
-                                st.error(f"Error processing joint angles: {str(e)}")
-                                # Print more detailed error information
-                                st.write("Error details:", str(e))
-                        elif analysis_type == "Movement Speed":
-                            try:
-                                # Load predictions with proper error handling
-                                predictions = torch.load('rawdata/processed_dataset/predictions.pt')
-
-                                speeds, stats = process_movement_speed(predictions)
-                                
-                                # Create chart data
-                                speed_data = pd.DataFrame(speeds)
-                                
-                                # Display the line chart
-                                st.write("### Movement Speed Analysis")
-                                st.write("The speed graph shows the velocity (in centimeters per second) of different key body parts over time throughout your motion sequence.")
-                                st.write("Peaks in the graph: These represent moments of fast movement for that body part")
-                                st.write("Valleys or low points: These show when that body part is moving slowly or is relatively still")
-                            
-                                st.line_chart(speed_data)
-                                
-
-                                        
-                            except Exception as e:
-                                st.error(f"Error processing movement speeds: {str(e)}")
-                                st.write("Full error details:", str(e))
-                                import traceback
-                                st.write("Traceback:", traceback.format_exc())
-
-                        elif analysis_type == "Pose Accuracy":
-                            try:
-                                # Load predictions
-                                predictions = torch.load('rawdata/processed_dataset/predictions.pt')
-                                
-                                # Process pose accuracy
-                                metrics, stats = process_pose_accuracy(predictions)
-                                
-                            
-                                # Show statistics
-                                st.write("### Accuracy Statistics")
-                                
-                                # Create columns for each metric
-                                cols = st.columns(len(stats))
-                                
-                                for i, (metric, metric_stats) in enumerate(stats.items()):
-                                    with cols[i]:
-                                        st.metric(
-                                            label=metric.replace('_', ' ').title(),
-                                            value=f"{metric_stats['average']:.2f}",
-                                            delta=f"Range: {metric_stats['min']:.2f} - {metric_stats['max']:.2f}"
-                                        )
-                                
-                                # Detailed explanation
-                                st.write("### Metrics Explanation")
-                                st.write("""
-                                - **Smoothness**: Measures motion smoothness, indicating control and coordination
-                                - **Symmetry Score**: Measures left-right body symmetry and can help to detect muscle imbalances 
-                                - **Posture Score**: Measures overall posture alignment, this is important as poor posture can lead to back pain and neck strain
-                                """)
-                                
-                            except Exception as e:
-                                st.error(f"Error processing pose accuracy: {str(e)}")
-                                st.write("Error details:", str(e))
-
-                            
-
-
-
-                                
-                except Exception as e:
-                    st.error(f"Error processing video: {str(e)}")
-                    st.info("Please ensure the video file is not corrupted and is a valid MP4 format.")
 
 
 
