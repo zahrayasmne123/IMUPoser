@@ -8,6 +8,8 @@ import imageio.v2 as imageio_v2
 from imuposer.smpl.parametricModel import ParametricModel
 from imuposer.math.angular import r6d_to_rotation_matrix
 
+base_dir = "/dcs/22/u2254377/cs310/IMUPoser"
+
 COLORS = {
     "torso": "green",
     "left_leg": "red",
@@ -69,7 +71,7 @@ def prepare_joints_data(joints_data):
         
     return joints
 
-# Calculate axis limits for consistent visualization.
+# Calculate axis limits for consistent visualisation.
 def calculate_axis_limits(joints):
     # Calculate global min/max across all frames to keep consistent scaling
     all_joints = joints.reshape(-1, 3)
@@ -270,7 +272,7 @@ def save_animated_sequence_with_dots(
 # Convert poses to joint positions
 def convert_poses_to_joints(
     predictions,
-    smpl_model_path="IMUPoser/src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl",
+    smpl_model_path= os.path.join(base_dir, "/src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
 ):
     """Convert pose predictions to 3D joint positions using SMPL"""
 
@@ -348,19 +350,18 @@ def load_predictions(predictions_path):
     print(f"Predictions shape: {predictions.shape}")
     return predictions
 
-def main():
+def visuals_pipeline():
     """Main function to visualize skeletal data with dots but no labels"""
-    predictions = load_predictions("IMUPoser/rawdata/processed/predictions.pt")
+    # Then use os.path.join for all paths
+    predictions = load_predictions(os.path.join(base_dir, "rawdata/processed/predictions.pt"))
     joints = convert_poses_to_joints(
-        predictions, "IMUPoser/src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl"
+        predictions, os.path.join(base_dir, "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
     )
-
+    
     # Save multi-view grid with dots
     frame_indices = [0, 100, 200, 300, 400, 500] if joints.shape[1] >= 500 else None
-    save_multi_view_grid(joints, "IMUPoser/output/pose_grid_dots.png", frame_indices)
+    save_multi_view_grid(joints, os.path.join(base_dir, "output/pose_grid_dots.png"), frame_indices)
+    frames_dir = save_animated_sequence_with_dots(joints, os.path.join(base_dir, "output/pose_frames_dots"), 5)
+    create_gif(frames_dir, os.path.join(base_dir, "output/output_frames.gif"))
 
-    # Save frames for animation with dots
-    frames_dir = save_animated_sequence_with_dots(joints, "IMUPoser/output/pose_frames_dots", 5)
-    create_gif(frames_dir, "IMUPoser/output/output_frames.gif")
-
-    print("Visualization with dots completed successfully!")
+    print("visualisation with dots completed successfully!")
