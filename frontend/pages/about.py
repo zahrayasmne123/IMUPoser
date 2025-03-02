@@ -101,7 +101,7 @@ def about_us_page():
         TEMPO bridges this gap by:
         <ul> 
             <li>Utilizing everyday wearable devices for data collection</li>
-            <li>Implementing IMUPoser's deep learning algorithm for 3D visualization</li>
+            <li>Implementing IMUPoser's deep learning algorithm for 3D visualisation</li>
             <li>Providing an accessible platform for continuous monitoring</li>
             <li>Enabling early detection of movement abnormalities</li>
         </ul>
@@ -151,7 +151,7 @@ def about_us_page():
                 <ul>
                     <li>Deep learning-based pose estimation</li>
                     <li>Real-time data synchronization</li>
-                    <li>3D visualization generation</li>
+                    <li>3D visualisation generation</li>
                     <li>Movement analysis algorithms</li>
                 </ul>
             </div>
@@ -196,7 +196,7 @@ def about_us_page():
                 <h3>🎨 Frontend</h3>
                 <ul>
                     <li>Streamlit</li>
-                    <li>Interactive 3D Visualization</li>
+                    <li>Interactive 3D visualisation</li>
                     <li>Real-time Data Display</li>
                 </ul>
             </div>

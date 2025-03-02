@@ -3,14 +3,15 @@ import os
 import torch # type: ignore
 from process_sensor_data.imuDataPipeline import full_sensor_pipeline
 import streamlit as st # type: ignore
-import tempfile
+from application.run_inference import load_model, run_inference
+from application.visualisepose import visuals_pipeline
 
 def run_setup_script():
     """
     Run the minimal setup commands for IMUPoser.
     This simplified version assumes most dependencies are already installed.
     """
-    st.text("Setting up IMUPoser environment...")
+    # st.text("Setting up IMUPoser environment...")
     
     try:
         # Find the IMUPoser src directory
@@ -20,7 +21,7 @@ def run_setup_script():
         for dir in src_dirs:
             if os.path.exists(dir) and os.path.isdir(dir):
                 src_dir = dir
-                st.text(f"Found IMUPoser src directory at: {src_dir}")
+                # st.text(f"Found IMUPoser src directory at: {src_dir}")
                 break
         
         if not src_dir:
@@ -135,12 +136,9 @@ def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=T
         
         # Use default checkpoint path if none provided
         if checkpoint_path is None:
-            # Try to find the checkpoint in common locations
             possible_paths = [
-                os.path.abspath("checkpoints/checkpoint.ckpt"),  # Checkpoints folder
-
-            ]
-            
+                os.path.abspath("checkpoints/checkpoint.ckpt")]
+        
             for path in possible_paths:
                 if os.path.exists(path):
                     checkpoint_path = path
@@ -150,41 +148,19 @@ def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=T
                 st.warning("Could not find checkpoint file automatically.")
                 st.info("Please upload or specify the correct checkpoint path.")
                 
-                # Allow user to upload a checkpoint file
-                uploaded_checkpoint = st.file_uploader(
-                    "Upload checkpoint file (.ckpt)", 
-                    type=["ckpt", "pt"], 
-                    key="checkpoint_uploader"
-                )
-                
-                if uploaded_checkpoint:
-                    # Save the uploaded checkpoint to a temporary location
-                    temp_checkpoint_path = os.path.join(output_dir, "uploaded_checkpoint.ckpt")
-                    with open(temp_checkpoint_path, "wb") as f:
-                        f.write(uploaded_checkpoint.getbuffer())
-                    
-                    st.text(f"Using uploaded checkpoint: {temp_checkpoint_path}")
-                    checkpoint_path = temp_checkpoint_path
-                else:
-                    st.error("No checkpoint available. Skipping inference.")
-                    return readable_device_names, tensor, None
-        
+               
         # Set output path for predictions
         predictions_path = os.path.join(output_dir, 'predictions.pt')
 
 
         try:
-            from application.run_inference import load_model, run_inference
-            st.text("Imported inference functions directly")
+            # st.text("Imported inference functions directly")
             
-            # Load model
             model = load_model(checkpoint_path, device='cpu')
-            
-            # Run inference
             predictions = run_inference(model, tensor_path, predictions_path, device='cpu')
             
             st.text(f"✓ Generated predictions with shape: {predictions.shape}") # type: ignore
-            st.text(f"✓ Saved predictions to: {predictions_path}")
+            # st.text(f"✓ Saved predictions to: {predictions_path}")
                 
         except ImportError as e:
                 st.text(f"Import error: {e}, trying subprocess method")
@@ -249,6 +225,8 @@ def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=T
             import traceback
             st.text(traceback.format_exc())
 
+
+    visuals_pipeline()
     
     return readable_device_names, tensor, predictions
 

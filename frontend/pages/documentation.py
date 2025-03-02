@@ -19,7 +19,7 @@ def documentation_help_page():
     
     2. **Data Collection**: Once your sensors are connected, you can begin recording motion data. The app will show you progress on each sensor’s setup, guiding you step by step.
     
-    3. **Data Analysis**: After collecting your data, use the "Data Analysis" page to upload raw data files, process them, and generate 3D pose visualizations.
+    3. **Data Analysis**: After collecting your data, use the "Data Analysis" page to upload raw data files, process them, and generate 3D pose visualisations.
     
     4. **Results & Reports**: View your analysis results in real-time and export them for further review. You can also compare results across multiple sessions.
 
@@ -40,7 +40,7 @@ def documentation_help_page():
     - Restart the app and reconnect the devices.
     
     **Q: How do I process the data after uploading it?**
-    A: After uploading your sensor data on the "Data Analysis" page, you can click the "Process Files" button to initiate the processing pipeline. This will analyze the motion data and generate reports with visualizations.
+    A: After uploading your sensor data on the "Data Analysis" page, you can click the "Process Files" button to initiate the processing pipeline. This will analyze the motion data and generate reports with visualisations.
 
     **Q: How can I export the analysis results?**
     A: You can export your analysis results in CSV or PDF format by clicking the "Export" button on the results page. Detailed instructions on how to save and share your reports will be displayed.
