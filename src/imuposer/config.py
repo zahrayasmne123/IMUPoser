@@ -1,7 +1,9 @@
 from pathlib import Path
 import torch
 import datetime
+import os
 
+base_dir = "/dcs/22/u2254377/cs310/IMUPoser"
 class Config:
     def __init__(self, experiment=None, model=None, project_root_dir=None,
                  joints_set=None, loss_type=None, mkdir=True, normalize=False,
@@ -23,7 +25,7 @@ class Config:
         self.pred_last_frame = pred_last_frame
         self.use_vposer_loss = use_vposer_loss
         self.use_vel_loss = use_vel_loss
-        self.og_smpl_model_path = og_smpl_model_path or Path("/dcs/22/u2254377/cs310/IMUPoser/src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
+        self.og_smpl_model_path = og_smpl_model_path or Path(os.path.join(base_dir, "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl"))
 
         if device != None:
             if 'cpu' in device:
@@ -40,7 +42,7 @@ class Config:
     def build_paths(self):
        
         self.smpl_model_path = self.root_dir / "src/imuposer/smpl/model.pkl" 
-        self.og_smpl_model_path = Path("/dcs/22/u2254377/cs310/IMUPoser/src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
+        self.og_smpl_model_path = Path(os.path.join(base_dir, "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl"))
     
             
         self.raw_dip_path = Path("/content/drive/MyDrive/data/DIP_IMU")

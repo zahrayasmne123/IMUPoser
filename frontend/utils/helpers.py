@@ -65,7 +65,6 @@ def run_model_inference_subprocess(input_path, output_path, checkpoint_path, ins
                     st.text(f"Found source directory at {path}")
                     # Only install if not already installed
                     try:
-                        import imuposer
                         st.text("✓ IMUPoser package already installed")
                         break
                     except ImportError:
