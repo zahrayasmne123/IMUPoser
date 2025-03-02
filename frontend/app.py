@@ -143,7 +143,7 @@ def display_tempo_title():
 ########################### HOME PAGE #############################
 
 def home_page():
-    """Render an enhanced home page with modern design elements"""
+    display_tempo_title()
     
     # Custom CSS for enhanced styling
     st.markdown("""
@@ -193,13 +193,7 @@ def home_page():
         </style>
     """, unsafe_allow_html=True)
 
-    # Header Section with Hero Image
-    st.markdown("""
-        <div style="text-align: center; padding: 40px 0;">
-            <h1 class="gradient-text" style="font-size: 3.5em;">TEMPO</h1>
-            <p style="font-size: 1.5em; color: #666;">Tracking and Estimating Motion for Patient Observation</p>
-        </div>
-    """, unsafe_allow_html=True)
+
 
     # Quick Stats Row
     col1, col2, col3, col4 = st.columns(4)
