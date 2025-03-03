@@ -3,8 +3,8 @@ import os
 import torch # type: ignore
 from process_sensor_data.imuDataPipeline import full_sensor_pipeline
 import streamlit as st # type: ignore
-from application.run_inference import load_model, run_inference
-from application.visualisepose import visuals_pipeline
+from post_processing.run_inference import load_model, run_inference
+from post_processing.visualisepose import visuals_pipeline
 
 def run_setup_script():
     """
@@ -166,7 +166,7 @@ def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=T
                 
                 # Use the subprocess method as fallback
                 script_path = None
-                for path in ["./application/run_inference.py", "../application/run_inference.py", "./run_inference.py"]:
+                for path in ["./post_processing/run_inference.py", "../post_processing/run_inference.py", "./run_inference.py"]:
                     if os.path.exists(path):
                         script_path = path
                         break
