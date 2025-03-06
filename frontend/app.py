@@ -210,7 +210,7 @@ def home_page():
     with col2:
         st.markdown("""
             <div class="stat-box">
-                <h3>85%</h3>
+                <h3>70%</h3>
                 <p>Motion Accuracy</p>
             </div>
         """, unsafe_allow_html=True)
