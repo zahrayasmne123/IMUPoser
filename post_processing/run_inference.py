@@ -1,7 +1,6 @@
 import torch
 from pathlib import Path
-import argparse
-import sys
+
 from src.imuposer.config import Config, amass_combos
 from src.imuposer.models.LSTMs.IMUPoser_Model import IMUPoserModel
 
