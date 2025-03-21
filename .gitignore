@@ -5,7 +5,7 @@ data/raw
 results
 
 ProcessMocap
-
+imuposer_env
 **/__pycache__/
 **/lightning_logs/
 **/wandb/

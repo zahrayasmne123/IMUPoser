@@ -1,6 +1,6 @@
 import subprocess
 import os
-import torch
+import torch # type: ignore
 from process_sensor_data.imuDataPipeline import full_sensor_pipeline
 import streamlit as st # type: ignore
 import tempfile
@@ -108,9 +108,6 @@ def run_model_inference_subprocess(input_path, output_path, checkpoint_path, ins
     """
     Run the inference using subprocess to call the command line directly.
     """
-    import subprocess
-    import os
-    import torch
     
     st.text("Running model inference via command line...")
     
