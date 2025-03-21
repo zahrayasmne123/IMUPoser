@@ -18,9 +18,9 @@ from imuposer.config import Config, amass_datasets
 from imuposer.smpl.parametricModel import ParametricModel
 from imuposer import math
 import sys
-sys.path.append("/content/IMUPoser")
+sys.path.append("/IMUPoser")
 
-config = Config(experiment="preprocessing_run", project_root_dir="/content/IMUPoser")
+config = Config(experiment="preprocessing_run", project_root_dir="/IMUPoser")
 
 def process_amass():
     def _syn_acc(v):

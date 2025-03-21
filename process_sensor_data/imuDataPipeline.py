@@ -6,6 +6,111 @@ from .synchronise_dataframes import robust_synchronise_dataframes
 from .csvtotensor import create_IMUPoser_tensor
 from .trim_timestamps import trim_dataframes
 import pandas as pd
+import glob
+import os
+
+def read_csv_safely(file_path, nrows=None):
+    """Read CSV with robust parameter settings to handle encoding and whitespace issues"""
+    try:
+        return pd.read_csv(
+            file_path, 
+            nrows=nrows,
+            skipinitialspace=True,  # Handle whitespace after commas
+            encoding='utf-8',       # Explicitly set encoding
+            quotechar='"',          # Explicitly set quote character
+            dtype=str if nrows == 1 else None  # For headers, read as strings
+        )
+    except Exception as e:
+        print(f"Error reading {file_path} with enhanced parameters: {e}")
+        # Fallback to minimal parameters
+        try:
+            return pd.read_csv(file_path, nrows=nrows)
+        except Exception as e2:
+            print(f"Error with fallback method: {e2}")
+            raise
+
+def is_accelerometer_file(file_path):
+    """Check if a file contains accelerometer data by checking its filename"""
+    try:
+        # IMPORTANT: Trust the filename over the contents
+        # If it has "Accelerometer" in the name, it IS an accelerometer file
+        if "accelerometer" in os.path.basename(file_path).lower():
+            print(f"  Identified as accelerometer file based on filename")
+            return True
+        
+        # If no clue from filename, check the headers as fallback
+        print(f"Checking if {file_path} is an accelerometer file")
+        # Use our improved CSV reader
+        df = read_csv_safely(file_path, nrows=1)
+        cols = df.columns.tolist()
+        print(f"  Found columns: {cols}")
+        
+        # Check if the file has x-axis, y-axis, z-axis columns with (g) unit
+        x_accel = any('x-axis' in col.lower() and '(g)' in col for col in cols)
+        y_accel = any('y-axis' in col.lower() and '(g)' in col for col in cols)
+        z_accel = any('z-axis' in col.lower() and '(g)' in col for col in cols)
+        has_accel = x_accel and y_accel and z_accel
+        print(f"  Contains accelerometer data: {has_accel}")
+        return has_accel
+    except Exception as e:
+        print(f"  Error checking file {file_path}: {e}")
+        return False
+
+def is_gyroscope_file(file_path):
+    """Check if a file contains gyroscope data by checking its filename"""
+    try:
+        # IMPORTANT: Trust the filename over the contents
+        # If it has "Gyroscope" in the name, it IS a gyroscope file regardless of column headers
+        if "gyroscope" in os.path.basename(file_path).lower():
+            print(f"  Identified as gyroscope file based on filename")
+            return True
+            
+        # If no clue from filename, check the headers as fallback
+        print(f"Checking if {file_path} is a gyroscope file")
+        # Use our improved CSV reader
+        df = read_csv_safely(file_path, nrows=1)
+        cols = df.columns.tolist()
+        print(f"  Found columns: {cols}")
+        
+        # Check if the file has x-axis, y-axis, z-axis columns with (deg/s) unit
+        x_gyro = any('x-axis' in col.lower() and '(deg/s)' in col for col in cols)
+        y_gyro = any('y-axis' in col.lower() and '(deg/s)' in col for col in cols)
+        z_gyro = any('z-axis' in col.lower() and '(deg/s)' in col for col in cols)
+        has_gyro = x_gyro and y_gyro and z_gyro
+        print(f"  Contains gyroscope data: {has_gyro}")
+        return has_gyro
+    except Exception as e:
+        print(f"  Error checking file {file_path}: {e}")
+        return False
+
+def fix_gyroscope_columns(gyro_df):
+    """
+    Fix gyroscope dataframe that has incorrect column headers (g instead of deg/s)
+    This can happen if gyroscope files incorrectly use accelerometer column labels
+    """
+    if gyro_df is None:
+        return None
+        
+    # Check if we need to fix the columns
+    cols = gyro_df.columns.tolist()
+    has_g_units = any('(g)' in col for col in cols)
+    has_degs_units = any('(deg/s)' in col for col in cols)
+    
+    # If it has (g) units but not (deg/s) units, it needs fixing
+    if has_g_units and not has_degs_units:
+        print("CRITICAL FIX: Correcting gyroscope column headers that incorrectly use (g) units")
+        print("Original columns:", cols)
+        
+        renamed_cols = {}
+        for col in cols:
+            if '(g)' in col:
+                renamed_cols[col] = col.replace('(g)', '(deg/s)')
+                
+        # Rename the columns
+        gyro_df = gyro_df.rename(columns=renamed_cols)
+        print(f"Fixed columns: {gyro_df.columns.tolist()}")
+        
+    return gyro_df
 
 def find_sensor_files(data_directory):
     """
@@ -17,9 +122,6 @@ def find_sensor_files(data_directory):
     Returns:
         Dictionary of detected file paths for each sensor type
     """
-    import os
-    import glob
-    
     # Initialize result dictionary with None values
     data_files = {
         'phone': None,
@@ -40,57 +142,96 @@ def find_sensor_files(data_directory):
     # Detect earbuds file - contains 'esense' in filename
     earbud_files = [f for f in csv_files if 'esense' in f.lower()]
     if earbud_files:
-        data_files['earbud'] = earbud_files[0] # type: ignore
+        data_files['earbud'] = earbud_files[0]
         print(f"Found earbud file: {os.path.basename(data_files['earbud'])}")
         # Remove from list to avoid double-matching
         csv_files = [f for f in csv_files if f not in earbud_files]
     
-    # Detect left watch accelerometer - contains both 'left' and 'accelerometer'
-    left_accel_files = [f for f in csv_files if 'left' in f.lower() and 'accelerometer' in f.lower()]
-    if left_accel_files:
-        data_files['left_accel'] = left_accel_files[0] # type: ignore
-        print(f"Found left watch accelerometer file: {os.path.basename(data_files['left_accel'])}")
-        # Remove from list
-        csv_files = [f for f in csv_files if f not in left_accel_files]
+    # First pass - identify files by left/right and accelerometer/gyroscope in filename
+    for file in csv_files[:]:
+        basename = os.path.basename(file).lower()
+        
+        # Identify left/right watch files by filename first
+        is_left = 'left' in basename
+        is_right = 'right' in basename
+        
+        # Then check for accelerometer/gyroscope files by filename
+        is_accel_by_name = 'accelerometer' in basename
+        is_gyro_by_name = 'gyroscope' in basename
+        
+        # Assign based on filename patterns with high confidence
+        if is_left and is_accel_by_name and data_files['left_accel'] is None:
+            data_files['left_accel'] = file
+            print(f"Found left watch accelerometer file (by filename): {os.path.basename(file)}")
+            csv_files.remove(file)
+        elif is_left and is_gyro_by_name and data_files['left_gyro'] is None:
+            data_files['left_gyro'] = file
+            print(f"Found left watch gyroscope file (by filename): {os.path.basename(file)}")
+            csv_files.remove(file)
+        elif is_right and is_accel_by_name and data_files['right_accel'] is None:
+            data_files['right_accel'] = file
+            print(f"Found right watch accelerometer file (by filename): {os.path.basename(file)}")
+            csv_files.remove(file)
+        elif is_right and is_gyro_by_name and data_files['right_gyro'] is None:
+            data_files['right_gyro'] = file
+            print(f"Found right watch gyroscope file (by filename): {os.path.basename(file)}")
+            csv_files.remove(file)
     
-    # Detect left watch gyroscope - contains both 'left' and 'gyroscope'
-    left_gyro_files = [f for f in csv_files if 'left' in f.lower() and 'gyroscope' in f.lower()]
-    if left_gyro_files:
-        data_files['left_gyro'] = left_gyro_files[0] # type: ignore
-        print(f"Found left watch gyroscope file: {os.path.basename(data_files['left_gyro'])}")
-        # Remove from list
-        csv_files = [f for f in csv_files if f not in left_gyro_files]
+    # Remaining files - identify by content if needed
+    # First separate left/right
+    left_files = [f for f in csv_files if 'left' in os.path.basename(f).lower()]
+    right_files = [f for f in csv_files if 'right' in os.path.basename(f).lower()]
     
-    # Detect right watch accelerometer - contains both 'right' and 'accelerometer'
-    right_accel_files = [f for f in csv_files if 'right' in f.lower() and 'accelerometer' in f.lower()]
-    if right_accel_files:
-        data_files['right_accel'] = right_accel_files[0] # type: ignore
-        print(f"Found right watch accelerometer file: {os.path.basename(data_files['right_accel'])}")
-        # Remove from list
-        csv_files = [f for f in csv_files if f not in right_accel_files]
+    # Remove identified files to avoid double-matching
+    other_files = [f for f in csv_files if f not in left_files and f not in right_files]
     
-    # Detect right watch gyroscope - contains both 'right' and 'gyroscope'
-    right_gyro_files = [f for f in csv_files if 'right' in f.lower() and 'gyroscope' in f.lower()]
-    if right_gyro_files:
-        data_files['right_gyro'] = right_gyro_files[0] # type: ignore
-        print(f"Found right watch gyroscope file: {os.path.basename(data_files['right_gyro'])}")
-        # Remove from list
-        csv_files = [f for f in csv_files if f not in right_gyro_files]
+    # Process left watch files
+    if left_files and (data_files['left_accel'] is None or data_files['left_gyro'] is None):
+        print(f"\nProcessing {len(left_files)} remaining left watch files...")
+        for file in left_files:
+            if is_accelerometer_file(file) and data_files['left_accel'] is None:
+                data_files['left_accel'] = file
+                print(f"Found left watch accelerometer file: {os.path.basename(file)}")
+            if is_gyroscope_file(file) and data_files['left_gyro'] is None:
+                data_files['left_gyro'] = file
+                print(f"Found left watch gyroscope file: {os.path.basename(file)}")
     
-    # Any remaining file is likely phone data
-    # If multiple files remain, take the largest one
-    if csv_files:
-        if len(csv_files) > 1:
+    # Process right watch files
+    if right_files and (data_files['right_accel'] is None or data_files['right_gyro'] is None):
+        print(f"\nProcessing {len(right_files)} remaining right watch files...")
+        for file in right_files:
+            if is_accelerometer_file(file) and data_files['right_accel'] is None:
+                data_files['right_accel'] = file
+                print(f"Found right watch accelerometer file: {os.path.basename(file)}")
+            if is_gyroscope_file(file) and data_files['right_gyro'] is None:
+                data_files['right_gyro'] = file
+                print(f"Found right watch gyroscope file: {os.path.basename(file)}")
+    
+    # Handle phone files
+    # Collect list of all files already assigned to a sensor
+    assigned_files = [f for f in [
+        data_files['left_accel'], data_files['left_gyro'],
+        data_files['right_accel'], data_files['right_gyro'],
+        data_files['earbud']
+    ] if f is not None]
+    
+    # Make sure we only consider truly unassigned files for phone
+    unassigned_files = [f for f in other_files if f not in assigned_files]
+    
+    if unassigned_files:
+        if len(unassigned_files) > 1:
             # Get file sizes
-            file_sizes = {f: os.path.getsize(f) for f in csv_files}
+            file_sizes = {f: os.path.getsize(f) for f in unassigned_files}
             # Find the largest file
             phone_file = max(file_sizes, key=lambda f: file_sizes[f])
             print(f"Multiple potential phone files found. Using largest: {os.path.basename(phone_file)}")
         else:
-            phone_file = csv_files[0]
+            phone_file = unassigned_files[0]
             print(f"Found phone file: {os.path.basename(phone_file)}")
         
-        data_files['phone'] = phone_file # type: ignore
+        data_files['phone'] = phone_file
+    else:
+        print("No unassigned files available for phone data")
     
     # Print summary of found files
     print("\nSensor file detection summary:")
@@ -107,7 +248,6 @@ def align_all_sensor_data(data_directory):
     Dynamically align all available sensor data from the given directory.
     Uses pattern matching to find the appropriate files.
     """
-
     # Initialize sensor aligners
     phone = PhoneSensorAligner()
     watch_aligner = WatchSensorAligner()
@@ -125,8 +265,10 @@ def align_all_sensor_data(data_directory):
     # Process phone data if available
     try:
         if data_files['phone']:
-            phone_df = pd.read_csv(data_files['phone'])
-            phone_df = phone_df.drop(columns=[col for col in phone_df.columns if 'Unnamed:' in col])
+            # Use safe reading function
+            phone_df = read_csv_safely(data_files['phone'])
+            # Remove any unnamed columns
+            phone_df = phone_df.drop(columns=[col for col in phone_df.columns if 'Unnamed:' in col], errors='ignore')
             phone_aligned_df = phone.align_sensor_data(phone_df)
             print("Successfully processed phone data")
         else:
@@ -137,7 +279,8 @@ def align_all_sensor_data(data_directory):
     # Process earbud data if available
     try:
         if data_files['earbud']:
-            earbud_df = pd.read_csv(data_files['earbud'])
+            # Use safe reading function
+            earbud_df = read_csv_safely(data_files['earbud'])
             earbud_aligned_df = earbuds_aligner.align_sensor_data(earbud_df)
             print("Successfully processed earbud data")
         else:
@@ -148,30 +291,54 @@ def align_all_sensor_data(data_directory):
     # Process left watch data if available
     try:
         if data_files['left_accel'] and data_files['left_gyro']:
-            leftaccel_df = pd.read_csv(data_files['left_accel'])
-            leftgyro_df = pd.read_csv(data_files['left_gyro'])
+            # Use safe reading function for both files
+            leftaccel_df = read_csv_safely(data_files['left_accel'])
+            leftgyro_df = read_csv_safely(data_files['left_gyro'])
+            
+            # Fix gyroscope column headers if needed
+            leftgyro_df = fix_gyroscope_columns(leftgyro_df)
+            
+            # Debug info
+            print(f"\nLeft accelerometer columns: {leftaccel_df.columns.tolist()}")
+            print(f"Left gyroscope columns: {leftgyro_df.columns.tolist()}")
+            print(f"Left accelerometer data sample:\n{leftaccel_df.head(2)}")
+            print(f"Left gyroscope data sample:\n{leftgyro_df.head(2)}")
+
             left_watch_aligned_df = watch_aligner.align_sensor_data(leftaccel_df, leftgyro_df)
             print("Successfully processed left watch data")
         else:
+            missing = []
             if not data_files['left_accel']:
-                print("No left watch accelerometer data file found")
+                missing.append("accelerometer")
             if not data_files['left_gyro']:
-                print("No left watch gyroscope data file found")
+                missing.append("gyroscope")
+            print(f"Incomplete left watch data: missing {', '.join(missing)} file(s)")
     except Exception as e:
         print(f"Error processing left watch data: {str(e)}")
 
     # Process right watch data if available
     try:
         if data_files['right_accel'] and data_files['right_gyro']:
-            rightaccel_df = pd.read_csv(data_files['right_accel'])
-            rightgyro_df = pd.read_csv(data_files['right_gyro'])
+            # Use safe reading function for both files
+            rightaccel_df = read_csv_safely(data_files['right_accel'])
+            rightgyro_df = read_csv_safely(data_files['right_gyro'])
+            
+            # Fix gyroscope column headers if needed
+            rightgyro_df = fix_gyroscope_columns(rightgyro_df)
+            
+            # Debug info
+            print(f"\nRight accelerometer columns: {rightaccel_df.columns.tolist()}")
+            print(f"Right gyroscope columns: {rightgyro_df.columns.tolist()}")
+            
             right_watch_aligned_df = watch_aligner.align_sensor_data(rightaccel_df, rightgyro_df)
             print("Successfully processed right watch data")
         else:
+            missing = []
             if not data_files['right_accel']:
-                print("No right watch accelerometer data file found")
+                missing.append("accelerometer")
             if not data_files['right_gyro']:
-                print("No right watch gyroscope data file found")
+                missing.append("gyroscope")
+            print(f"Incomplete right watch data: missing {', '.join(missing)} file(s)")
     except Exception as e:
         print(f"Error processing right watch data: {str(e)}")
 

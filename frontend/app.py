@@ -143,7 +143,7 @@ def display_tempo_title():
 ########################### HOME PAGE #############################
 
 def home_page():
-    """Render an enhanced home page with modern design elements"""
+    display_tempo_title()
     
     # Custom CSS for enhanced styling
     st.markdown("""
@@ -193,13 +193,7 @@ def home_page():
         </style>
     """, unsafe_allow_html=True)
 
-    # Header Section with Hero Image
-    st.markdown("""
-        <div style="text-align: center; padding: 40px 0;">
-            <h1 class="gradient-text" style="font-size: 3.5em;">TEMPO</h1>
-            <p style="font-size: 1.5em; color: #666;">Tracking and Estimating Motion for Patient Observation</p>
-        </div>
-    """, unsafe_allow_html=True)
+
 
     # Quick Stats Row
     col1, col2, col3, col4 = st.columns(4)
@@ -216,7 +210,7 @@ def home_page():
     with col2:
         st.markdown("""
             <div class="stat-box">
-                <h3>85%</h3>
+                <h3>70%</h3>
                 <p>Motion Accuracy</p>
             </div>
         """, unsafe_allow_html=True)
@@ -332,7 +326,7 @@ def home_page():
         st.markdown("""
             ### Analyzing Your Results
             - Process raw data
-            - Generate 3D visualizations
+            - Generate 3D visualisations
             - Apply analysis algorithms
             - Review motion patterns
         """)
@@ -341,7 +335,7 @@ def home_page():
         st.markdown("""
             ### Generating Reports
             - Create detailed summaries
-            - Export visualizations
+            - Export visualisations
             - Share results securely
             - Track progress over time
         """)
@@ -364,7 +358,7 @@ def home_page():
     
 
     
-    # Add some example visualizations or statistics for the homepage
+    # Add some example visualisations or statistics for the homepage
     st.subheader("System Overview")
     col1, col2 = st.columns(2)
     

@@ -3,11 +3,20 @@ data/processed_imuposer_25fps
 data/raw
 # experiments
 results
-
+1.rawdata
 ProcessMocap
+<<<<<<< HEAD
 imuposer_env
+=======
+rawdata
+
+>>>>>>> 439da890b5301b5a995f5289fc16e4cb874df88e
 **/__pycache__/
 **/lightning_logs/
 **/wandb/
 **/*.egg-info/
 **/.ipynb_checkpoints/
+pose_frames_dots
+pose_grid_dots.png
+output
+imuposer_dataset

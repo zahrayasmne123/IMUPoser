@@ -1,0 +1,3 @@
+[theme]
+base = "light"
+font = "sans serif"  # You can use "sans serif", "serif", or "monospace"
