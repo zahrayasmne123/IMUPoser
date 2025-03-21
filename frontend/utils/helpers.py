@@ -46,8 +46,11 @@ def run_model_inference_subprocess(input_path, output_path, checkpoint_path, ins
     """
     Run the inference using subprocess to call the command line directly.
     """
+<<<<<<< HEAD
+=======
     import subprocess
     import os
+>>>>>>> 439da890b5301b5a995f5289fc16e4cb874df88e
     
     st.text("Running model inference via command line...")
     
