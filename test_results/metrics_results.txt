@@ -1,15 +1,19 @@
 IMUPoser Evaluation Metrics
 ==========================
 
-Overall MSE: 0.505433
-MPJPE: 0.4278 mm
-Acceleration Error: 171.7014 mm/s²
-SMPL Parameter Error: 0.505433
+Overall MSE: 0.480522
+MPJPE: 0.4378 mm
+Acceleration Error: 175.5177 mm/s²
+SMPL Parameter Error: 0.480522
 
 Per-activity metrics:
   4. Walking:
-    MPJPE: 0.3873 mm
+    MPJPE: 0.3810 mm
   1. ArmRaises:
-    MPJPE: 0.5411 mm
+    MPJPE: 0.5549 mm
+  4. LowerBody:
+    MPJPE: 0.4730 mm
   5. Walking:
-    MPJPE: 0.3892 mm
+    MPJPE: 0.3973 mm
+  3. ArmCrossing:
+    MPJPE: 0.5410 mm

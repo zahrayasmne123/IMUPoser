@@ -1,0 +1,30 @@
+combination,num_sensors,mse,active_sensors
+Left Pocket + Head,2,0.5556889,"Left Pocket, Head"
+Left Wrist + Left Pocket + Head,3,0.55834645,"Left Wrist, Left Pocket, Head"
+Both Pockets,2,0.55911595,"Left Pocket, Right Pocket"
+Both Pockets + Head,3,0.5591783,"Left Pocket, Right Pocket, Head"
+Left Wrist + Both Pockets + Head,4,0.559269,"Left Wrist, Left Pocket, Right Pocket, Head"
+Right Pocket + Head,2,0.5611116,"Right Pocket, Head"
+Left Wrist + Both Pockets,3,0.5626836,"Left Wrist, Left Pocket, Right Pocket"
+Left Wrist + Left Pocket,2,0.5641224,"Left Wrist, Left Pocket"
+Both Wrists + Left Pocket + Head,4,0.56423587,"Left Wrist, Right Wrist, Left Pocket, Head"
+Left Wrist + Head,2,0.56525356,"Left Wrist, Head"
+Left Wrist + Right Pocket,2,0.5655137,"Left Wrist, Right Pocket"
+Head Only,1,0.56613016,Head
+Right Wrist + Both Pockets + Head,4,0.56749743,"Right Wrist, Left Pocket, Right Pocket, Head"
+Right Pocket Only,1,0.56916445,Right Pocket
+Left Pocket Only,1,0.56993216,Left Pocket
+All Sensors,5,0.5700368,"Left Wrist, Right Wrist, Left Pocket, Right Pocket, Head"
+Right Wrist + Both Pockets,3,0.5704399,"Right Wrist, Left Pocket, Right Pocket"
+Both Wrists + Both Pockets,4,0.5710768,"Left Wrist, Right Wrist, Left Pocket, Right Pocket"
+Right Wrist + Left Pocket,2,0.5715684,"Right Wrist, Left Pocket"
+Both Wrists + Left Pocket,3,0.5725756,"Left Wrist, Right Wrist, Left Pocket"
+Both Wrists + Right Pocket,3,0.57275003,"Left Wrist, Right Wrist, Right Pocket"
+Right Wrist + Right Pocket + Head,3,0.57296467,"Right Wrist, Right Pocket, Head"
+Both Wrists + Right Pocket + Head,4,0.5733531,"Left Wrist, Right Wrist, Right Pocket, Head"
+Left Wrist Only,1,0.57410884,Left Wrist
+Right Wrist + Head,2,0.57452625,"Right Wrist, Head"
+Both Wrists + Head,3,0.5745384,"Left Wrist, Right Wrist, Head"
+Both Wrists,2,0.5749077,"Left Wrist, Right Wrist"
+Right Wrist Only,1,0.57727575,Right Wrist
+Right Wrist + Right Pocket,2,0.57792544,"Right Wrist, Right Pocket"
