@@ -493,8 +493,8 @@ if __name__ == "__main__":
     # 2. Load test data with specific activities
     print("Loading test data...")
     test_data = load_test_data(
-        participant_ids=["P1", "P2"], 
-        activities=["Walking", "ArmRaises"]
+        participant_ids=["P1", "P2", "P3", "P4"], 
+        activities=["Walking", "ArmRaises", "ArmCrossing", "LowerBody"]
     )
     
     # 3. Debug output the shapes

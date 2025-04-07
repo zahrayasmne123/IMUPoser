@@ -345,6 +345,56 @@ def align_all_sensor_data(data_directory):
     # Return all dataframes, even if some are None
     return phone_aligned_df, earbud_aligned_df, left_watch_aligned_df, right_watch_aligned_df
 
+#Bias correction for gyroscope data based on calibration values 
+def correct_gyroscope_bias(aligned_dfs, df_names=None):
+    if df_names is None:
+        df_names = ['phone', 'earbuds', 'left_watch', 'right_watch']
+    
+    # Store the calibration bias values
+    device_biases = {
+        'phone': {'x': 0.178631, 'y': 0.251748, 'z': -0.046175},
+        'earbuds': {'x': 0.624219, 'y': 2.335583, 'z': -0.595254},
+        'left_watch': {'x': 0.099619, 'y': 0.138018, 'z': 0.024356},
+        'right_watch': {'x': -0.265199, 'y': -0.442142, 'z': 0.087390}
+    }
+    
+    corrected_dfs = []
+    
+    # Process each dataframe
+    for i, df in enumerate(aligned_dfs):
+        if df is None:
+            corrected_dfs.append(None)
+            continue
+            
+        device_name = df_names[i]
+        if device_name not in device_biases:
+            corrected_dfs.append(df)  # Keep unchanged if no bias values
+            continue
+        corrected_df = df.copy()
+        
+        # Check if gyroscope columns exist in the dataframe
+        has_gyro_columns = any('(deg/s)' in col for col in corrected_df.columns)
+        
+        if has_gyro_columns:
+            print(f"Applying bias correction to {device_name} gyroscope data:")
+            print(f"  Original means: X={corrected_df['x-axis (deg/s)'].mean():.6f}, "
+                  f"Y={corrected_df['y-axis (deg/s)'].mean():.6f}, "
+                  f"Z={corrected_df['z-axis (deg/s)'].mean():.6f}")
+            
+            # Apply bias correction
+            corrected_df['x-axis (deg/s)'] = corrected_df['x-axis (deg/s)'] - device_biases[device_name]['x']
+            corrected_df['y-axis (deg/s)'] = corrected_df['y-axis (deg/s)'] - device_biases[device_name]['y']
+            corrected_df['z-axis (deg/s)'] = corrected_df['z-axis (deg/s)'] - device_biases[device_name]['z']
+            
+            print(f"  Corrected means: X={corrected_df['x-axis (deg/s)'].mean():.6f}, "
+                  f"Y={corrected_df['y-axis (deg/s)'].mean():.6f}, "
+                  f"Z={corrected_df['z-axis (deg/s)'].mean():.6f}")
+        
+        corrected_dfs.append(corrected_df)
+    
+    return corrected_dfs
+
+
 def process_aligned_sensor_data(aligned_dfs, df_names=None, output_path=None):
     """
     Process any available aligned sensor data and create an IMUPoser tensor.
