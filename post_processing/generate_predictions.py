@@ -83,7 +83,7 @@ def load_model(checkpoint_path, device='cpu'):
         print(f"Error loading model: {e}")
         raise
     
-def run_inference(model, input_tensor_path, output_path=None, device='cpu'):
+def generate_prediction(model, input_tensor_path, output_path=None, device='cpu'):
     """
     Run inference with the loaded model
     """

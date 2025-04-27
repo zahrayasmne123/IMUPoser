@@ -3,7 +3,7 @@ import os
 import torch # type: ignore
 from preprocessing.imuDataPipeline import full_sensor_pipeline
 import streamlit as st # type: ignore
-from post_processing.run_inference import load_model, run_inference
+from post_processing.generate_predictions import load_model, generate_prediction
 from post_processing.visualisepose import visuals_pipeline
 
 def run_setup_script():
@@ -156,7 +156,7 @@ def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=T
             # st.text("Imported inference functions directly")
             
             model = load_model(checkpoint_path, device='cpu')
-            predictions = run_inference(model, tensor_path, predictions_path, device='cpu')
+            predictions = generate_prediction(model, tensor_path, predictions_path, device='cpu')
             
             st.text(f"✓ Generated predictions with shape: {predictions.shape}") # type: ignore
             # st.text(f"✓ Saved predictions to: {predictions_path}")
@@ -166,7 +166,7 @@ def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=T
                 
                 # Use the subprocess method as fallback
                 script_path = None
-                for path in ["./post_processing/run_inference.py", "../post_processing/run_inference.py", "./run_inference.py"]:
+                for path in ["./post_processing/generate_prediction.py", "../post_processing/generate_prediction.py", "./generate_prediction.py"]:
                     if os.path.exists(path):
                         script_path = path
                         break
