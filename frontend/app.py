@@ -218,7 +218,7 @@ def home_page():
     with col3:
         st.markdown("""
             <div class="stat-box">
-                <h3>6</h3>
+                <h3>4</h3>
                 <p>Motion Sensors</p>
             </div>
         """, unsafe_allow_html=True)
@@ -238,8 +238,8 @@ def home_page():
             <p style="font-size: 1.1em; line-height: 1.6;">
                 TEMPO revolutionises motion tracking in medical applications by combining 
                 acessible wearable technology with advanced 3D pose estimation. Whether you're 
-                a medical professional, researcher, or healthcare provider, our platform offers 
-                comprehensive tools for accurate motion analysis and patient monitoring.
+                a medical professional, researcher, or healthcare provider, TEMPO offers 
+                useful tools for accurate motion analysis.
             </p>
         </div>
     """, unsafe_allow_html=True)
@@ -256,48 +256,23 @@ def home_page():
                 <ul>
                     <li>High-precision sensor data collection</li>
                     <li>Multi-device synchronisation</li>
-                    <li>Real-time data visualisation</li>
-                    <li>Customizable sampling rates</li>
+                    <li>Data visualisation</li>
                 </ul>
             </div>
         """, unsafe_allow_html=True)
         
+    with col2:
         st.markdown("""
-            <div class="feature-card" style="margin-top: 20px;">
+            <div class="feature-card">
                 <h3>🔍 Data Analysis</h3>
                 <ul>
                     <li>Advanced signal processing</li>
                     <li>Statistical analysis tools</li>
-                    <li>Customizable reports</li>
                     <li>Export capabilities</li>
                 </ul>
             </div>
         """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown("""
-            <div class="feature-card">
-                <h3>🎯 3D Pose Estimation</h3>
-                <ul>
-                    <li>Real-time pose tracking</li>
-                    <li>High accuracy reconstruction</li>
-                    <li>Multiple viewing angles</li>
-                    <li>Motion path analysis</li>
-                </ul>
-            </div>
-        """, unsafe_allow_html=True)
         
-        st.markdown("""
-            <div class="feature-card" style="margin-top: 20px;">
-                <h3>📱 Device Integration</h3>
-                <ul>
-                    <li>Wrist sensors support</li>
-                    <li>Smartphone integration</li>
-                    <li>eSense earbuds compatibility</li>
-                    <li>Easy device management</li>
-                </ul>
-            </div>
-        """, unsafe_allow_html=True)
 
     # Quick Start Guide
     st.markdown("## 🚀 Quick Start Guide")
@@ -317,8 +292,7 @@ def home_page():
         st.markdown("""
             ### Recording Motion Data
             - Position sensors correctly
-            - Start synchronized recording
-            - Monitor data quality
+            - Start synchronised recording
             - Save recorded sessions
         """)
     
@@ -357,28 +331,6 @@ def home_page():
             st.info("Please select 'Data Analysis' from the sidebar and go to the 'Collect Device Data' tab.")
     
 
-    
-    # Add some example visualisations or statistics for the homepage
-    st.subheader("System Overview")
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.info("📊 Data Processing Pipeline")
-        st.markdown("""
-        1. Collect wearable device data
-        2. Process motion patterns
-        3. Generate 3D pose estimation
-        4. Analyze results
-        """)
-    
-    with col2:
-        st.info("🎯 Benefits")
-        st.markdown("""
-        - Accurate motion tracking
-        - Real-time feedback
-        - Comprehensive analysis
-        - Patient progress monitoring
-        """)
 
 
 def main():
