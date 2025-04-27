@@ -1,7 +1,7 @@
 import subprocess
 import os
 import torch # type: ignore
-from process_sensor_data.imuDataPipeline import full_sensor_pipeline
+from preprocessing.imuDataPipeline import full_sensor_pipeline
 import streamlit as st # type: ignore
 from post_processing.run_inference import load_model, run_inference
 from post_processing.visualisepose import visuals_pipeline
