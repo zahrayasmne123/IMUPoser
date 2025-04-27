@@ -82,10 +82,10 @@ def about_us_page():
         <div class="highlight-container">
             <h2>Research Overview</h2>
             <p style="font-size: 1.1em; line-height: 1.6;">
-                TEMPO is a pioneering research project addressing the growing challenges of neurodegenerative diseases in our aging global population. 
+                TEMPO is a  research project addressing the growing challenges of neurodegenerative diseases in our aging global population. 
                 As part of a Computer Science dissertation at the University of Warwick, this project focuses on creating accessible solutions for long-term movement monitoring.
             Despite decades of research, neurodegenerative conditions like Alzheimer's remain without a cure. These conditions significantly impact motor function, making early detection and monitoring crucial.
-                Current methods for long-term movement analysis face both usability and technological limitations. </p>
+                Current methods for long-term movement analysis face both usability and technological limitations. TEMPO's aim is to overcome this. </p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -100,10 +100,9 @@ def about_us_page():
         <h2>💡 Our Solution</h2>
         TEMPO bridges this gap by:
         <ul> 
-            <li>Utilizing everyday wearable devices for data collection</li>
+            <li>Utilising everyday wearable devices for data collection</li>
             <li>Implementing IMUPoser's deep learning algorithm for 3D visualisation</li>
             <li>Providing an accessible platform for continuous monitoring</li>
-            <li>Enabling early detection of movement abnormalities</li>
         </ul>
         </div>
         """ ,unsafe_allow_html=True)
@@ -150,57 +149,11 @@ def about_us_page():
                 <h3>Processing Pipeline</h3>
                 <ul>
                     <li>Deep learning-based pose estimation</li>
-                    <li>Real-time data synchronization</li>
+                    <li>Data synchronisation</li>
                     <li>3D visualisation generation</li>
                     <li>Movement analysis algorithms</li>
                 </ul>
             </div>
         """, unsafe_allow_html=True)
-
-    # Technologies Section
-    st.markdown("""
-        <div class="section-card">
-            <h2> 🛠️ Technologies</h2>
-    """, unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("""
-            <div class="tech-section">
-                <h3>📱 Hardware</h3>
-                <ul>
-                    <li>eSense Earbuds</li>
-                    <li>MetaWear Wrist Sensors</li>
-                    <li>Smartphone IMU Sensors</li>
-                </ul>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown("""
-            <div class="tech-section">
-                <h3> 💻 Backend</h3>
-                <ul>
-                    <li>PyTorch</li>
-                    <li>OpenCV</li>
-                    <li>Deep Learning LSTM Model</li>
-                    <li>Signal Processing</li>
-                </ul>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown("""
-            <div class="tech-section">
-                <h3>🎨 Frontend</h3>
-                <ul>
-                    <li>Streamlit</li>
-                    <li>Interactive 3D visualisation</li>
-                    <li>Real-time Data Display</li>
-                </ul>
-            </div>
-        """, unsafe_allow_html=True)
-
 
 
