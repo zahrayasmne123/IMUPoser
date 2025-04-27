@@ -2,7 +2,6 @@ import streamlit as st
 import os
 from frontend.analysis.joints import process_joint_angles
 from frontend.analysis.speed import process_movement_speed
-from frontend.analysis.accuracy import process_pose_accuracy
 import torch
 import numpy as np
 import pandas as pd
@@ -31,7 +30,7 @@ def pose_analysis(base_dir):
     # Create a radio selector for analysis type
     analysis_type = st.radio(
         "Choose Analysis Type:",
-        ["📐 Joint Angle Analysis", "⚡ Movement Speed Analysis", "✓ Pose Accuracy Metrics"],
+        ["📐 Joint Angle Analysis", "⚡ Movement Speed Analysis"],
         horizontal=True
     )
     
@@ -193,103 +192,3 @@ def pose_analysis(base_dir):
             st.error(f"Error processing movement speeds: {str(e)}")
             st.exception(e)
     
-    # Pose Accuracy Section
-    elif analysis_type == "✓ Pose Accuracy Metrics":
-        try:
-            st.subheader("Pose Accuracy Analysis")
-            st.write("These metrics evaluate the overall quality of movement patterns, looking at smoothness, symmetry, and posture.")
-            
-            # Process pose accuracy
-            metrics, stats = process_pose_accuracy(predictions)
-            
-            # Group metrics for easier viewing
-            metric_groups = {
-                "Overall Metrics": ["smoothness", "symmetry_score", "posture_score"],
-                "Smoothness Metrics": ["smoothness", "upper_body_smoothness", "lower_body_smoothness", "torso_smoothness"],
-                "Symmetry Metrics": ["symmetry_score", "arm_symmetry", "leg_symmetry"],
-                "Posture Metrics": ["posture_score", "head_tilt", "vertical_alignment"],
-                "All Metrics": list(metrics.keys())
-            }
-            
-            # Let user choose group - with unique key
-            selected_group = st.selectbox(
-                "Select metric group:",
-                options=list(metric_groups.keys()),
-                index=0,
-                key="accuracy_group_selector"  # Unique key
-            )
-            
-            # Get available metrics in the selected group
-            available_metrics = [m for m in metric_groups[selected_group] if m in metrics] # type: ignore
-            
-            if available_metrics:
-                # Show statistics
-                st.write("### Accuracy Statistics")
-                
-                # Create columns for each metric
-                num_cols = min(len(available_metrics), 3)
-                cols = st.columns(num_cols)
-                
-                for i, metric in enumerate(available_metrics):
-                    if metric in stats:
-                        metric_stats = stats[metric]
-                        with cols[i % num_cols]:
-                            st.metric(
-                                label=metric.replace('_', ' ').title(),
-                                value=f"{metric_stats['average']:.2f}",
-                                delta=f"Range: {metric_stats['min']:.2f} - {metric_stats['max']:.2f}"
-                            )
-                
-                # Show time-series data
-                st.write("### Metrics Over Time")
-                
-                # Default selection - choose a reasonable number of metrics
-                default_selection = available_metrics[:min(3, len(available_metrics))]
-                
-                # Unique key for multiselect
-                selected_metrics = st.multiselect(
-                    "Select metrics to display:",
-                    options=available_metrics,
-                    default=default_selection,
-                    key="accuracy_metric_selector"  # Unique key
-                )
-                
-                if selected_metrics:
-                    metrics_df = pd.DataFrame({m: metrics[m] for m in selected_metrics})
-                    st.line_chart(metrics_df)
-                    
-                    # Add detailed explanation as regular text instead of nested expander
-                    st.write("### Metrics Explained")
-                    explanations = {
-                        "smoothness": "Measures motion smoothness, indicating control and coordination. Higher values indicate smoother movements with less jerky motions.",
-                        "upper_body_smoothness": "Measures the smoothness of movements in the upper body (shoulders, arms, head). Higher values indicate smoother upper body movements.",
-                        "lower_body_smoothness": "Measures the smoothness of movements in the lower body (hips, legs). Higher values indicate smoother lower body movements.",
-                        "torso_smoothness": "Measures the smoothness of movements in the torso (pelvis, spine). Higher values indicate smoother torso movements.",
-                        "symmetry_score": "Measures overall left-right body symmetry. Higher values indicate more symmetrical movement patterns.",
-                        "arm_symmetry": "Measures symmetry between left and right arms. Higher values indicate more symmetrical arm movements.",
-                        "leg_symmetry": "Measures symmetry between left and right legs. Higher values indicate more symmetrical leg movements.",
-                        "posture_score": "Measures overall posture alignment, especially in the spine. Higher values indicate better posture alignment.",
-                        "head_tilt": "Measures how vertically aligned the head is. Higher values indicate the head is more upright.",
-                        "vertical_alignment": "Measures how vertically aligned the body is from pelvis to head. Higher values indicate better vertical alignment."
-                    }
-                    
-                    for metric in selected_metrics:
-                        if metric in explanations:
-                            st.write(f"**{metric.replace('_', ' ').title()}**: {explanations[metric]}")
-                        else:
-                            st.write(f"**{metric.replace('_', ' ').title()}**: No detailed explanation available.")
-                    
-                    st.write("### Score Interpretation")
-                    st.write("""
-                    - All metrics are normalized to a 0-1 scale, where 1 is optimal
-                    - Values above 0.8 generally indicate excellent performance
-                    - Values between 0.6-0.8 indicate good performance
-                    - Values between 0.4-0.6 indicate average performance
-                    - Values below 0.4 may indicate areas for improvement
-                    """)
-            else:
-                st.info(f"No metrics available for the {selected_group} group.")
-                
-        except Exception as e:
-            st.error(f"Error processing pose accuracy: {str(e)}")
-            st.exception(e)
