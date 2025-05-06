@@ -1,6 +1,11 @@
 import streamlit as st # type: ignore
 
 ################ ABOUT US PAGE #######################
+# 1. Title Section: Displays the TEMPO title
+# 2. Highlighted container explaining the project's purpose and research overview
+# 3. Two-Column Layout: Showing TEMPO's solution and info about researcher
+# 4. Technical Implementation Section discussing data collection methods, processing pipeline etc
+#
 def about_us_page():
     """Render the About Us page with research context"""
     
@@ -77,12 +82,12 @@ def about_us_page():
         <div class="tempo-subtitle">Tracking and Evaluating Movement for Patient Observation</div>
     """, unsafe_allow_html=True)
     
-    # Welcome Message
+    # Introductory Message
     st.markdown("""
         <div class="highlight-container">
             <h2>Research Overview</h2>
             <p style="font-size: 1.1em; line-height: 1.6;">
-                TEMPO is a  research project addressing the growing challenges of neurodegenerative diseases in our aging global population. 
+                TEMPO is a research project addressing the growing challenges of neurodegenerative diseases in our aging global population. 
                 As part of a Computer Science dissertation at the University of Warwick, this project focuses on creating accessible solutions for long-term movement monitoring.
             Despite decades of research, neurodegenerative conditions like Alzheimer's remain without a cure. These conditions significantly impact motor function, making early detection and monitoring crucial.
                 Current methods for long-term movement analysis face both usability and technological limitations. TEMPO's aim is to overcome this. </p>
@@ -91,10 +96,10 @@ def about_us_page():
 
 
     # Create two columns
-    col1, col2 = st.columns(2)
+    our_solution_card, researcher_info = st.columns(2)
 
     # Overview Section in first column
-    with col1:
+    with our_solution_card:
         st.markdown("""
         <div class="section-card">           
         <h2>💡 Our Solution</h2>
@@ -108,7 +113,7 @@ def about_us_page():
         """ ,unsafe_allow_html=True)
 
     # Research Team Section in second column
-    with col2:
+    with researcher_info:
         st.markdown("""
         <div class="section-card">
             <h2>👤 Main Researcher</h2>
@@ -128,9 +133,9 @@ def about_us_page():
             <h2> ⚙️ Technical Implementation</h2>
     """, unsafe_allow_html=True)
     
-    col1, col2 = st.columns(2)
+    tech_section, processing_pipeline = st.columns(2)
     
-    with col1:
+    with tech_section:
         st.markdown("""
             <div class="tech-section">
                 <h3>Data Collection</h3>
@@ -143,7 +148,7 @@ def about_us_page():
             </div>
         """, unsafe_allow_html=True)
         
-    with col2:
+    with processing_pipeline:
         st.markdown("""
             <div class="tech-section">
                 <h3>Processing Pipeline</h3>

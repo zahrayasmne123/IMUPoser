@@ -5,44 +5,50 @@ from frontend.utils.create_sensor_section import create_sensor_section
 from frontend.utils.pose_analysis import pose_analysis
 
 base_dir = "/dcs/22/u2254377/cs310/IMUPoser"
-############# DATA ANALYSIS PAGE ######################
+################## DATA ANALYSIS PAGE ############################
+# 1. Creates four tab different data analysis functions in sub pages
+# 2. On sub-page 1: Call the create_sensor_section function
+# 3. On sub-page 2: Import data collection function
+# 4. On sub-Page 3: View pose visualisation: two columns, one with  frame-by-frame visualisation and slider, the 
+#               other with a  multi-view grid of poses
+# 5. On sub-page 4:Import pose analysis function for analytical tools and charts for the pose data
 
 def data_analysis_page():
     st.markdown("""
-        <style>
-        .upload-section {
-            margin: 1rem 0;
-        }
-        
-        .metric-container {
-            background: white;
-            padding: 1rem;
-            border-radius: 4px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        
-        .metric-value {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #333;
-        }
-        
-        .metric-label {
-            color: #666;
-            margin-top: 0.5rem;
-        }
-        
-        /* Clean up tab styling */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 0.5rem;
-        }
-        
-        .stTabs [data-baseweb="tab"] {
-            padding: 0.5rem 1rem;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    <style>
+    .upload-section {
+        margin: 1rem 0;
+    }
+    
+    .metric-container {
+        background: white;
+        padding: 1rem;
+        border-radius: 4px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    
+    .metric-value {
+        font-size: 1.2em;
+        font-weight: bold;
+        color: #333;
+    }
+    
+    .metric-label {
+        color: #666;
+        margin-top: 0.5rem;
+    }
+    
+    /* Clean up tab styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0.5rem;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        padding: 0.5rem 1rem;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
     # Display title using home page style
     st.markdown("""
@@ -64,90 +70,82 @@ def data_analysis_page():
     <div class="tempo-title">Data Analysis</div>
     """, unsafe_allow_html=True)
 
-    # Create tabs with minimal styling
-    tabs = st.tabs([
+    # Tabs for different sub pages
+    sub_page = st.tabs([
         "📱 Collect Device Data",
         "📤 Upload Device Data",
         "🎥 3D Pose Visualisation",
         "📈 Pose Analysis"
     ])
 
-    with tabs[0]:
+    with sub_page[0]:
         create_sensor_section()
-
-    with tabs[1]:
+    with sub_page[1]:
         device_data_upload(base_dir)
 
-    with tabs[2]:
+    with sub_page[2]:
         st.header("3D Pose visualisation")
+        carosel_frames, multiview_grid = st.columns([1, 1])
         
-        col1, col2 = st.columns([1, 1])
-        
-        with col1:
-            # Section for visualisation frames carousel
-            st.subheader("Pose Frames")
+        with carosel_frames:
+            st.subheader("Pose Frames") # visualisation carousel
             
-            # Check if frames directory exists
+            # Gather individual frames from frames directory 
             frames_dir = os.path.join(base_dir,"output", "pose_frames_dots")
-            if os.path.exists(frames_dir):
-                # Get all PNG files in the directory
-                frame_files = sorted([f for f in os.listdir(frames_dir) if f.endswith('.png')])
+            individual_frame_files = sorted([f for f in os.listdir(frames_dir) if f.endswith('.png')])
+            
+            if individual_frame_files:
+                st.write("Use the slider to navigate through pose frames:")
                 
-                if frame_files:
-                    # Create a custom carousel
-                    st.write("Use the slider to navigate through pose frames:")
+                # frame selection slider for carosel
+                selected_frame_index = st.slider(
+                    "Frame", 
+                    min_value=0, 
+                    max_value=len(individual_frame_files)-1, 
+                    value=0,
+                    key="frame_slider"
+                )
+                
+                # display frame chosen by sldie
+                selected_frame_path = os.path.join(frames_dir, individual_frame_files[selected_frame_index])
+                st.image(selected_frame_path, use_column_width=True, caption=f"Frame {selected_frame_index+1}/{len(individual_frame_files)}")
+                
+
+                # Exporting controls
+                with st.expander("Frame Controls", expanded=False):
+                    with open(selected_frame_path, "rb") as file:  # Option to download the current frame
+                        st.download_button(
+                            label="Download Current Frame",
+                            data=file,
+                            file_name=f"pose_frame_{selected_frame_index}.png",
+                            mime="image/png"
+                        )
                     
-                    # Frame selection slider
-                    selected_frame_idx = st.slider(
-                        "Frame", 
-                        min_value=0, 
-                        max_value=len(frame_files)-1, 
-                        value=0,
-                        key="frame_slider"
-                    )
-                    
-                    # Display the selected frame
-                    selected_frame_path = os.path.join(frames_dir, frame_files[selected_frame_idx])
-                    st.image(selected_frame_path, use_column_width=True, caption=f"Frame {selected_frame_idx+1}/{len(frame_files)}")
-                    
-    
-                    # Additional controls
-                    with st.expander("Frame Controls", expanded=False):
-                        # Option to download the current frame
-                        with open(selected_frame_path, "rb") as file:
-                            st.download_button(
-                                label="Download Current Frame",
-                                data=file,
-                                file_name=f"pose_frame_{selected_frame_idx}.png",
-                                mime="image/png"
-                            )
+                    # Download as gif to view the GIF
+                    gif_path = os.path.join(base_dir, "output", "output_frames.gif")
+                    if os.path.exists(gif_path):
+                        st.write("Full Animation:")
+                        st.image(gif_path, use_column_width=True)
                         
-                        # Option to view the GIF
-                        gif_path = os.path.join(base_dir, "output", "output_frames.gif")
-                        if os.path.exists(gif_path):
-                            st.write("Full Animation:")
-                            st.image(gif_path, use_column_width=True)
-                            
-                            with open(gif_path, "rb") as file:
-                                st.download_button(
-                                    label="Download Animation GIF",
-                                    data=file,
-                                    file_name="pose_animation.gif",
-                                    mime="image/gif",
-                                    key="gif_download"
-                                )
+                        with open(gif_path, "rb") as file:
+                            st.download_button(
+                                label="Download Animation GIF",
+                                data=file,
+                                file_name="pose_animation.gif",
+                                mime="image/gif",
+                                key="gif_download"
+                            )
   
-        with col2:
-            # Section for multi-view grid and analysis
+        with multiview_grid: # Section for multi-view grid and analysis
             st.subheader("Multi-View Analysis")
             
-            # Display the multi-view grid if available
-            grid_path = os.path.join(base_dir, "output/pose_grid_dots.png")
-            if os.path.exists(grid_path):
-                st.image(grid_path, use_column_width=True, caption="Multi-view pose grid")
+            # Display the multi-view grid image from putput dolder 
+            multiview_grid_path = os.path.join(base_dir, "output/pose_grid.png")
+            if os.path.exists(multiview_grid_path):
+                st.image(multiview_grid_path, use_column_width=True, caption="Multi-view pose grid")
                 
-                # Add download button for the grid
-                with open(grid_path, "rb") as file:
+                # Download button for multi view grid
+                with open(multiview_grid_path, "rb") as file:
                     st.download_button(
                         label="Download Grid Image",
                         data=file,
@@ -158,7 +156,7 @@ def data_analysis_page():
             else:
                 st.info("Multi-view grid not available. Generate visualisations to create it.")
 
-    with tabs[3]: 
+    with sub_page[3]: 
         pose_analysis(base_dir)
 
         

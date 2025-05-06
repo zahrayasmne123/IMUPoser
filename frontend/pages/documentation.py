@@ -1,7 +1,5 @@
 import streamlit as st # type: ignore
 
-
-
 ################## DOCUMENTATION HELP PAGE ###################
 def documentation_help_page():
     """Render the Documentation/Help page"""

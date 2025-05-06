@@ -7,6 +7,7 @@ from frontend.pages.analysis import data_analysis_page
 from frontend.pages.about import about_us_page
 from frontend.pages.esens_collection import esens_collection_page
 
+
 # Set page configuration
 st.set_page_config(
     page_title="TEMPO - Medical Motion Tracking",
@@ -15,12 +16,21 @@ st.set_page_config(
 )
 
 
-# Define color scheme
-PRIMARY_COLOR = "#0066cc"
-SECONDARY_COLOR = "#ff9900"
-BACKGROUND_COLOR = "#f0f2f6"
+###### APP.PY: Main hub for front end display with home page, data analysis section, documentation, 
+# and about us section #######
 
-# Custom CSS with multiple header style options
+# 1. Set Page Config:  Sets up the page with title and wide layour
+# 2. Colour Scheme: CSS Implementations for whole website styling
+# 3. Display TEMPO Title: Creates gradient title "TEMPO" and subtitle using custom CSS
+# 4. Home Page: Main landing page with a statistics row showing four metrics, introductory welcome message for TEMPO
+# key features, quick start guide and button to start data collection
+# 5. Main: Function that runs the Streamlit app and creates sidebar navigation to load other pages
+
+#color scheme
+main_colour = "#0066cc"
+secondary_colour = "#ff9900"
+
+# CSS Implementation
 st.markdown("""
     <style>
     /* Base styles */
@@ -31,10 +41,7 @@ st.markdown("""
         background-color: #0066cc;
         color: white;
     }
-    .stTextInput>div>div>input {
-        background-color: white;
-    }
-    
+
     /* Sophisticated header styles */
     .header-modern {
         background-color: white;
@@ -43,68 +50,8 @@ st.markdown("""
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     
-    .header-split {
-        display: flex;
-        align-items: center;
-        gap: 2rem;
-        padding: 1rem;
-        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-    }
-    
-    .header-minimal {
-        padding: 2rem;
-        border-bottom: 2px solid #eaeaea;
-        margin-bottom: 2rem;
-    }
-    
-    .header-image {
-        max-width: 100%;
-        height: auto;
-        object-fit: contain;
-    }
-    
-    .title-modern {
-        font-family: 'Inter', sans-serif;
-        font-weight: 600;
-        font-size: 2.5rem;
-        letter-spacing: -0.02em;
-        margin-bottom: 0.5rem;
-        color: #1a1a1a;
-    }
-    
-    .subtitle-modern {
-        font-family: 'Inter', sans-serif;
-        font-weight: 400;
-        font-size: 1.1rem;
-        color: #666666;
-        letter-spacing: 0.01em;
-        line-height: 1.5;
-    }
-    
-    .animated-border {
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .animated-border::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 2px;
-        background: linear-gradient(90deg, #0066cc, #00cc99);
-        transform: translateX(-100%);
-        animation: border-slide 2s ease-in-out infinite;
-    }
-    
-    @keyframes border-slide {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
-    }
     </style>
     """, unsafe_allow_html=True)
-
 
 
 
@@ -193,12 +140,10 @@ def home_page():
         </style>
     """, unsafe_allow_html=True)
 
-
-
-    # Quick Stats Row
-    col1, col2, col3, col4 = st.columns(4)
+    # Metric Statistics Row
+    metric1, metric2, metric3, metric4 = st.columns(4)
     
-    with col1:
+    with metric1:
         st.markdown("""
             <div class="stat-box">
                 <h3>50Hz</h3>
@@ -207,7 +152,7 @@ def home_page():
         """, unsafe_allow_html=True)
 
 
-    with col2:
+    with metric2:
         st.markdown("""
             <div class="stat-box">
                 <h3>70%</h3>
@@ -215,7 +160,7 @@ def home_page():
             </div>
         """, unsafe_allow_html=True)
 
-    with col3:
+    with metric3:
         st.markdown("""
             <div class="stat-box">
                 <h3>4</h3>
@@ -223,7 +168,7 @@ def home_page():
             </div>
         """, unsafe_allow_html=True)
 
-    with col4:
+    with metric4:
         st.markdown("""
             <div class="stat-box">
                 <h3>17</h3>
@@ -231,12 +176,12 @@ def home_page():
             </div>
         """, unsafe_allow_html=True)
 
-    # Welcome Message
+    # introductory message
     st.markdown("""
         <div class="highlight-container">
             <h2>Welcome to TEMPO</h2>
             <p style="font-size: 1.1em; line-height: 1.6;">
-                TEMPO revolutionises motion tracking in medical applications by combining 
+                TEMPO was build to change how motion tracking is done in medical applications. It combines 
                 acessible wearable technology with advanced 3D pose estimation. Whether you're 
                 a medical professional, researcher, or healthcare provider, TEMPO offers 
                 useful tools for accurate motion analysis.
@@ -247,9 +192,9 @@ def home_page():
     # Main Features Section
     st.markdown("## 🚀 Key Features", unsafe_allow_html=True)
     
-    col1, col2 = st.columns(2)
+    key_feature1, key_feature2 = st.columns(2)
     
-    with col1:
+    with key_feature1:
         st.markdown("""
             <div class="feature-card">
                 <h3>📊 Motion Tracking</h3>
@@ -261,7 +206,7 @@ def home_page():
             </div>
         """, unsafe_allow_html=True)
         
-    with col2:
+    with key_feature2:
         st.markdown("""
             <div class="feature-card">
                 <h3>🔍 Data Analysis</h3>
@@ -277,9 +222,9 @@ def home_page():
     # Quick Start Guide
     st.markdown("## 🚀 Quick Start Guide")
     
-    tabs = st.tabs(["1. Setup Devices", "2. Record Data", "3. Analyze Results", "4. Generate Reports"])
+    quick_start_guide = st.tabs(["1. Setup Devices", "2. Record Data", "3. Analyze Results", "4. Generate Reports"])
     
-    with tabs[0]:
+    with quick_start_guide[0]:
         st.markdown("""
             ### Setting Up Your Devices
             - Connect your wearable sensors
@@ -288,7 +233,7 @@ def home_page():
             - Calibrate devices
         """)
     
-    with tabs[1]:
+    with quick_start_guide[1]:
         st.markdown("""
             ### Recording Motion Data
             - Position sensors correctly
@@ -296,22 +241,19 @@ def home_page():
             - Save recorded sessions
         """)
     
-    with tabs[2]:
+    with quick_start_guide[2]:
         st.markdown("""
-            ### Analyzing Your Results
+            ### Analysing Your Results
             - Process raw data
             - Generate 3D visualisations
-            - Apply analysis algorithms
             - Review motion patterns
         """)
     
-    with tabs[3]:
+    with quick_start_guide[3]:
         st.markdown("""
             ### Generating Reports
             - Create detailed summaries
             - Export visualisations
-            - Share results securely
-            - Track progress over time
         """)
 
     # Call-to-Action Section
@@ -325,8 +267,8 @@ def home_page():
     """, unsafe_allow_html=True)
 
     # Action Buttons
-    col1, col2, col3 = st.columns([1,2,1])
-    with col2:
+    metric1, metric2, metric3 = st.columns([1,2,1])
+    with metric2:
         if st.button("🎯 Start Data Collection", use_container_width=True):
             st.info("Please select 'Data Analysis' from the sidebar and go to the 'Collect Device Data' tab.")
     
@@ -334,41 +276,28 @@ def home_page():
 
 
 def main():
-    """Main function to run the Streamlit app"""
-    # Initialize session state for page navigation if it doesn't exist
     if 'current_page' not in st.session_state:
         st.session_state.current_page = 'main'
-    
-    # Create sidebar navigation
-    st.sidebar.title("Navigation")
-    
-    # Check if we should redirect to data collection
-    query_params = st.experimental_get_query_params()
-    if query_params.get("page", [""])[0] == "data_collection":
-        page = "Data Analysis"
-        # Clear the query parameter - use the older method
-        query_params.pop("page", None)
-        st.experimental_set_query_params(**query_params)
-    else:
-        page = st.sidebar.radio(
-            "Go to",
-            ["Home", "Data Analysis", "About Us", "Documentation & Help"],
-            key="nav_radio"
-        )
-    
-    # Check if we need to override the page based on session state
-    if st.session_state.current_page == 'esens_collection':
+
+    st.sidebar.title("Navigation") # Create sidebar navigation
+
+    page = st.sidebar.radio(
+        "Go to",
+        ["Home", "Data Analysis", "About Us", "Documentation & Help","eSens Collection Page" ],
+        key="nav_radio"
+    )
+
+    # Display selected page from the sidebar
+    if page == "Data Analysis":
+        data_analysis_page()
+    elif page == "Home":
+        home_page()
+    elif page == "About Us":
+        about_us_page()
+    elif page == "eSens Collection Page":
         esens_collection_page()
     else:
-        # Display selected page from the sidebar
-        if page == "Data Analysis":
-            data_analysis_page()
-        elif page == "Home":
-            home_page()
-        elif page == "About Us":
-            about_us_page()
-        else:
-            documentation_help_page()
+        documentation_help_page()
 
 if __name__ == "__main__":
     main()
