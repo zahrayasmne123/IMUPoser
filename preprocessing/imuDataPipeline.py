@@ -7,19 +7,29 @@ from .csvtotensor import create_IMUPoser_tensor
 from .trim_timestamps import trim_dataframes
 from .read_data_files import read_csv, find_sensor_files
 
+""" IMU DATA PIPELINE SUMMARY: The full sensor data processing pipeline for wearable devices. The pipeline takes raw sensor data from
+IMUs, aligns timestamps, processes according to device requirements, trims to compatible time ranges, calculates rotation
+matrices for gyroscopes data, synchronisies the data from all devices to ensure measurements are aligned in time,
+and finally converts into a tensor format compatible with the IMUPoser model
+
+1.Process Single Data: takes single data file, aligner class, sensor name, and a file reading function
+  Tries to read the data file using safe read_csv function and if sucessful applies the correct data aligner
+2.Process Two Data Files: Separate processor that takes two input files used specifically for watch devices which produce separate files for
+  different sensor types 
+3.Process Aligned Sensor Data: Takes a list of dfs with sensor data from each device
+   Ensures the number of dfs matches the number of device names and filters empty dfs
+   Steps through preprocessing pipeline: trim, rotation matrix, data synchronisation, tensor creation
+4. Full Sensor Pipeline: Aligns device data and feeds through pipelines using previously defined functions """
 
 
-def process_sensor_data(data_file, processor, sensor_name, safe_reader=read_csv):
-    """Process a single sensor data file and return the aligned dataframe."""
+def process_single_data_file(data_file, device_aligner, sensor_name):
     try:
         if data_file:
-            df = safe_reader(data_file)
-            if sensor_name == 'phone':
-                # Remove any unnamed columns for phone data
-                df = df.drop(columns=[col for col in df.columns if 'Unnamed:' in col], errors='ignore')
-            aligned_df = processor.align_sensor_data(df)
+            df = read_csv(data_file) #reads data file
+            aligned_df = device_aligner.align_sensor_data(df) #applies device aligner 
             print(f"Successfully processed {sensor_name} data")
             return aligned_df
+        # Error messages if device file isnt found 
         else:
             print(f"No {sensor_name} data file found")
             return None
@@ -29,35 +39,28 @@ def process_sensor_data(data_file, processor, sensor_name, safe_reader=read_csv)
 
 
 
-def process_watch_data(accel_file, gyro_file, watch_aligner, side, safe_reader=read_csv):
-    """Process watch data with both accelerometer and gyroscope files."""
+def process_two_data_files(accel_file, gyro_file, watch_aligner, left_or_right_side):
     try:
-        if accel_file and gyro_file:
-            accel_df = safe_reader(accel_file)
-            gyro_df = safe_reader(gyro_file)
+        if accel_file and gyro_file: #reads both accelerometer and gyroscope data files
+            accel_df = read_csv(accel_file)
+            gyro_df = read_csv(gyro_file)
             
-            # Debug info
-            print(f"\n{side.capitalize()} accelerometer columns: {accel_df.columns.tolist()}")
-            print(f"{side.capitalize()} gyroscope columns: {gyro_df.columns.tolist()}")
-            
-            # Only show sample data for left watch (to reduce redundancy)
-            if side == 'left':
-                print(f"{side.capitalize()} accelerometer data sample:\n{accel_df.head(2)}")
-                print(f"{side.capitalize()} gyroscope data sample:\n{gyro_df.head(2)}")
-                
+            #calls the watch aligner to combine and align the accelerometer and gyroscope data
             aligned_df = watch_aligner.align_sensor_data(accel_df, gyro_df)
-            print(f"Successfully processed {side} watch data")
+            print(f"Successfully processed {left_or_right_side} watch data")
             return aligned_df
+        
+        #error handling with specific messages about which files are missing 
         else:
             missing = []
             if not accel_file:
                 missing.append("accelerometer")
             if not gyro_file:
                 missing.append("gyroscope")
-            print(f"Incomplete {side} watch data: missing {', '.join(missing)} file(s)")
+            print(f"Incomplete {left_or_right_side} watch data: missing {', '.join(missing)} file(s)")
             return None
     except Exception as e:
-        print(f"Error processing {side} watch data: {str(e)}")
+        print(f"Error processing {left_or_right_side} watch data: {str(e)}")
         return None
 
 
@@ -72,17 +75,17 @@ def align_all_sensor_data(data_directory):
     data_files = find_sensor_files(data_directory)
 
     # Process each sensor type
-    phone_aligned_df = process_sensor_data(
+    phone_aligned_df = process_single_data_file(
         data_files['phone'], phone_aligner, 'phone')
     
-    earbud_aligned_df = process_sensor_data(
+    earbud_aligned_df = process_single_data_file(
         data_files['earbud'], earbuds_aligner, 'earbud')
     
-    left_watch_aligned_df = process_watch_data(
+    left_watch_aligned_df = process_two_data_files(
         data_files['left_accel'], data_files['left_gyro'], 
         watch_aligner, 'left')
     
-    right_watch_aligned_df = process_watch_data(
+    right_watch_aligned_df = process_two_data_files(
         data_files['right_accel'], data_files['right_gyro'], 
         watch_aligner, 'right')
 
@@ -92,13 +95,8 @@ def align_all_sensor_data(data_directory):
 
 
 
-
-##PROCESS ALIGNED SENSOR DATA: Takes a list of dfs with sensor data from each device
-# Ensures the number of dfs matches the number of device names and filters empty dfs
-# Steps through preprocessing pipeline: trim, rotation matrix, data synchronisation, tensor creation
-def process_aligned_sensor_data(aligned_dfs, df_names=None, output_path=None):
-    if df_names is None:
-        df_names = ['phone', 'earbuds', 'left_watch', 'right_watch']
+def process_aligned_sensor_data(aligned_dfs, output_path=None):
+    df_names = ['phone', 'earbuds', 'left_watch', 'right_watch']
 
     # Validate inputs
     if len(aligned_dfs) != len(df_names):
@@ -118,19 +116,19 @@ def process_aligned_sensor_data(aligned_dfs, df_names=None, output_path=None):
     if not valid_dfs:
         raise ValueError("No valid dataframes to process")
 
-    # Step 1: Trim dataframes
+    #1. Trim dataframes
     print("\nTrimming dataframes...")
     trimmed_dfs_list = trim_dataframes(valid_dfs, valid_names)
 
-    # Step 2: Calculate rotation matrices
+    #2. Calculate rotation matrices
     print("\nCalculating rotation matrices...")
     rotated_trimmed_dfs_list = rotation_matrix_df_conversion(trimmed_dfs_list)
 
-    # Step 3: Synchronize dataframes
+    # 3. Synchronize dataframes
     print("\nSynchronizing dataframes...")
     synced_dfs = robust_synchronise_dataframes(rotated_trimmed_dfs_list, valid_names)
 
-    # Step 4: Create IMUPoser tensor
+    #4. Create IMUPoser tensor
     print("\nCreating IMUPoser tensor...")
     full_synced_dfs = [None] * len(df_names) # Create a list with Nones for missing devices
     for i, name in enumerate(valid_names):
@@ -144,9 +142,7 @@ def process_aligned_sensor_data(aligned_dfs, df_names=None, output_path=None):
 def full_sensor_pipeline(data_dir='rawdata', output_path=None):
     print("Aligning sensor data...")
     aligned_dfs = align_all_sensor_data(data_dir)
-
-    df_names = ['phone', 'earbuds', 'left_watch', 'right_watch']
-    synced_dfs, tensor = process_aligned_sensor_data(aligned_dfs, df_names, output_path)
+    synced_dfs, tensor = process_aligned_sensor_data(aligned_dfs, output_path)
 
     print("\nPipeline completed successfully!")
     return synced_dfs, tensor

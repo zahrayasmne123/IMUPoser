@@ -82,9 +82,12 @@ class PhoneSensorAligner:
             return None
         
         try:
+            # Remove any unnamed columns that may have been created during CSV import
+            df = df.drop(columns=[col for col in df.columns if 'Unnamed:' in col], errors='ignore')
+            
             df = self.rename_time_column(df)      # First: rename time column
-            df = self.convert_imu_units(df)       # Third: convert units
-            df = self.rename_imu_columns(df)      # Fourth: rename to final column names
+            df = self.convert_imu_units(df)       # Second: convert units
+            df = self.rename_imu_columns(df)      # Third: rename to final column names
             return df
             
         except Exception as e:
