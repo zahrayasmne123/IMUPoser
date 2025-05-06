@@ -33,7 +33,7 @@ class TestPhoneSensorAligner(unittest.TestCase):
     
     def test_convert_rads_to_degs(self):
         """Test conversion from rad/s to deg/s"""
-        deg_value = self.aligner.convert_rads_to_degs(np.pi)
+        deg_value = self.aligner.convert_radians_to_degs(np.pi)
         self.assertEqual(deg_value, 180.0)
     
     def test_align_sensor_data(self):
