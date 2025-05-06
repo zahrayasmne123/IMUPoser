@@ -1,88 +1,62 @@
 import numpy as np
 import torch
-import os
-from typing import List, Optional, Tuple, Sequence
-import pandas as pd
 
-def validate_input_data(dfs: Sequence[Optional[pd.DataFrame]], device_names: List[str]) -> Tuple[int, List[pd.DataFrame], List[str]]:
-    print("\nValidating input data:")
-    print("-" * 50)
-    
-    # Filter out None values from dfs and device_names
-    valid_pairs = [(df, name) for df, name in zip(dfs, device_names) if df is not None]
-    
-    if not valid_pairs:
-        raise ValueError("No valid dataframes to process")
-    
-    valid_dfs = [pair[0] for pair in valid_pairs]
-    valid_device_names = [pair[1] for pair in valid_pairs]
+"""CSV TO TENSOR: Final step in preprocessing pipeline, converting the input accelerometer and gyroscope 
+data to tensors to be put in the IMUPoser deep learning algorithm  
+
+
+1.Validate_input_data: Input list of (dfs) and corresponding device name to make a pair
+    If there is a valid df, checks each dataframe to ensure all expected columns are present, if missing raise an error
+    Check timestamp consistency and prints confirmation messages if validation passes
+2.Df_to_numpy_array: Extracts accelerometer and rotation matrix data combining them into a single numpy array 
+3.Create_IMUPoser_tensor: Builds tensor for input into IMUPoser model. Takes multiple device dataframes, validates the input data,
+ and arranges the device data into specific positions. 
+
+"""
+
+def validate_input_data(dfs, device_names):
+    # Checks if there's at least one valid dataframe, error if noy
+    df_device_names = [(df, name) for df, name in zip(dfs, device_names) if df is not None]  
+    valid_dfs = [pair[0] for pair in df_device_names]
+    valid_device_names = [pair[1] for pair in df_device_names]
     
     # Check for expected columns in each dataframe
-    expected_cols = ['timestamp'] + [f'{ax}-axis (m/s^2)' for ax in ['x', 'y', 'z']] + \
+    valid_column_names = ['timestamp'] + [f'{ax}-axis (m/s^2)' for ax in ['x', 'y', 'z']] + \
                    [f'R{i}{j}' for i in range(3) for j in range(3)]
     
+    # Reports on missing columns 
     for df, name in zip(valid_dfs, valid_device_names):
-        missing_cols = set(expected_cols) - set(df.columns)
+        missing_cols = set(valid_column_names) - set(df.columns)
         if missing_cols:
             raise ValueError(f"{name} is missing columns: {missing_cols}")
     
-    # Check row counts
-    rows = [len(df) for df in valid_dfs]
-    if len(set(rows)) != 1:
-        raise ValueError(f"Inconsistent number of rows: {dict(zip(valid_device_names, rows))}")
+    # Counts the number of rows in each dataframe checks all df have same number of rows
+    row_counter = [len(df) for df in valid_dfs]
+    if len(set(row_counter)) != 1:
+        raise ValueError("Inconsistent number of rows")
     
     # Check timestamp consistency
     base_timestamps = valid_dfs[0]['timestamp'].values
     for df, name in zip(valid_dfs[1:], valid_device_names[1:]):
-        if not np.array_equal(base_timestamps, df['timestamp'].to_numpy()): # type: ignore
+        if not np.array_equal(base_timestamps, df['timestamp'].to_numpy()):
             raise ValueError(f"Timestamps don't match between {valid_device_names[0]} and {name}")
-    
-    print("✓ All input data validated successfully")
-    print(f"✓ Number of frames: {rows[0]}")
-    print(f"✓ Valid devices: {valid_device_names}")
-    
-    return rows[0], valid_dfs, valid_device_names
+    return row_counter[0], valid_dfs, valid_device_names
 
-def create_device_tensor(df: pd.DataFrame) -> np.ndarray:
-    """
-    Extracts acceleration and rotation data from a dataframe into a numpy array.
-    """
-    acc_values = df[[f'{ax}-axis (m/s^2)' for ax in ['x', 'y', 'z']]].values
-    rot_values = df[[f'R{i}{j}' for i in range(3) for j in range(3)]].values
-    return np.concatenate([acc_values, rot_values], axis=1)
 
-def create_IMUPoser_tensor(
-    dfs_list: List[Optional[pd.DataFrame]], 
-    device_names: List[str] = [],
-    output_path: Optional[str] = None
-) -> torch.Tensor:
-    """
-    Creates a tensor from IMU data for the IMUPoser model with fixed mapping.
-    Based on the IMUPoser paper, the tensor has 5 positions with 12 values each.
-    
-    Args:
-        dfs_list: List of dataframes containing IMU data (can contain None for missing devices)
-        device_names: Names of devices corresponding to each dataframe
-        output_path: Path to save the tensor (optional)
-        
-    Returns:
-        PyTorch tensor containing the processed IMU data
-    """
-    # Set default device names if not provided
-    if device_names is None:
-        device_names = ["phone", "left_watch", "right_watch", "earbuds"]
-    
-    # Validate input data - filter out None values
-    valid_dfs_list = [df for df in dfs_list if df is not None]
+def df_to_numpy_array(df):
+    accelerometer_data = df[[f'{ax}-axis (m/s^2)' for ax in ['x', 'y', 'z']]].values #Extract data
+    gyroscope_data = df[[f'R{i}{j}' for i in range(3) for j in range(3)]].values #Extract data
+    return np.concatenate([accelerometer_data, gyroscope_data], axis=1) #Concatenate into numpy array
+
+
+
+def create_IMUPoser_tensor(dfs_list, device_names,output_path):
+    #Validate input data
     valid_names = [name for df, name in zip(dfs_list, device_names) if df is not None]
-    
-    if not valid_dfs_list:
-        raise ValueError("No valid dataframes to process")
-    
+    valid_dfs_list = [df for df in dfs_list if df is not None]
     n_frames, valid_dfs, valid_device_names = validate_input_data(valid_dfs_list, valid_names)
     
-    
-    # Define standard device mapping according to paper
+    # Define standard device mapping according to IMUPoser
     device_positions = {
         'phone': 0,        # Phone (left position)
         'left_watch': 1,   # Left watch
@@ -90,26 +64,16 @@ def create_IMUPoser_tensor(
         'right_watch': 4   # Right watch
     }
     
-    # Initialize tensor with zeros (n_frames x 60)
-    # IMUPoser uses 5 positions with 12 values each = 60 total
+    # Initialise tensor with zeros (n_frames x 60) and process each device in the correct position
     tensor_data = np.zeros((n_frames, 60))
-    
-    # Process each device and place in the correct position
     for df, name in zip(valid_dfs, valid_device_names):
         position = None
         
         # Try to match the device name directly
         if name.lower() in device_positions:
             position = device_positions[name.lower()]
-        # Try to match by using partial matches
-        else:
-            for device_key in device_positions:
-                if device_key in name.lower():
-                    position = device_positions[device_key]
-                    break
-        
         if position is not None:
-            device_data = create_device_tensor(df)
+            device_data = df_to_numpy_array(df)
             tensor_data[:, position*12:(position+1)*12] = device_data
             print(f"✓ Placed device '{name}' at position {position}")
         else:
@@ -117,17 +81,7 @@ def create_IMUPoser_tensor(
     
     # Convert to PyTorch tensor
     tensor = torch.from_numpy(tensor_data).float()
-    
-    print("\nValidating output tensor:")
-    print("-" * 50)
-    print(f"✓ Tensor shape: {tensor.shape}")
-    print(f"✓ Expected shape: ({n_frames}, 60)")
-    
-    # Save tensor if output path provided
     if output_path:
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
         torch.save({'imu_data': tensor}, output_path)
         print(f"\nSaved tensor to {output_path}")
-    
     return tensor
