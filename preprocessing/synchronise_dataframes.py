@@ -19,13 +19,9 @@ def robust_synchronise_dataframes(dfs, device_names):
     for df in dfs:
         if 'timestamp' in df.columns:
             # Extract time components from the various formats and create standard format
-            def standardize_timestamp(ts):
-                if 'T' in ts:  # ISO format
-                    time_part = ts.split('T')[1]
-                    return time_part.replace('.', ':').split('+')[0]
-                else:  # Phone/earbud format
-                    return ts
-            df['timestamp'] = df['timestamp'].apply(standardize_timestamp)
+            df['timestamp'] = df['timestamp'].apply(
+                lambda ts: ts.split('T')[1].replace('.', ':').split('+')[0] if 'T' in ts else ts
+            )
     
     # Convert timestamps to datetime
     for df in dfs:
@@ -157,26 +153,4 @@ def validate_synchronization(dfs, device_names):
         nan_counts = df.isna().sum()
         print(f"\nNaN counts for {name}:")
         print(nan_counts[nan_counts > 0])
-    
-    # ... (rest of the original validation logic remains the same)
 
-def scale_acceleration_for_IMUPoser(df):
-    """
-    Scale acceleration values by 1/30 to match IMUPoser's expected range.
-    
-    Parameters:
-    - df: Input dataframe
-    
-    Returns:
-    - Scaled dataframe
-    """
-    scale_factor = 1/30
-    acc_columns = [col for col in df.columns if 'axis (m/s^2)' in col]
-    for col in acc_columns:
-        df[col] = df[col] * scale_factor
-    return df
-
-# Example usage
-# device_names = ['Phone', 'Earbud', 'Left Watch', 'Right Watch']
-# dfs = [phone_df, earbud_df, left_watch_df, right_watch_df]
-# synchronized_dfs = robust_synchronise_dataframes(dfs, device_names)

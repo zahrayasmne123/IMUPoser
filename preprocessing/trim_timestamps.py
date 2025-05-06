@@ -1,10 +1,7 @@
 def time_to_ms(time_str):
     """Convert any time string format to milliseconds since midnight."""
     try:
-        # Extract just the time part (hours:minutes:seconds)
         if 'T' in time_str:
-            # ISO format like "2025-02-25T11:25:23.415"
-            # Extract the hours, minutes, seconds
             time_part = time_str.split('T')[1]
             if '.' in time_part:
                 hours, minutes, seconds = map(int, time_part.split('.')[0].split(':'))

@@ -1,7 +1,7 @@
 from .phone_processor import PhoneSensorAligner
 from .watch_processor import WatchSensorAligner
 from .earbuds_processor import EarbudSensorAligner
-from .rotation_processor import robust_rotation_matrices_dataframes
+from .rotation_processor import rotation_matrix_df_conversion
 from .synchronise_dataframes import robust_synchronise_dataframes
 from .csvtotensor import create_IMUPoser_tensor
 from .trim_timestamps import trim_dataframes
@@ -93,7 +93,9 @@ def align_all_sensor_data(data_directory):
 
 
 
-
+##PROCESS ALIGNED SENSOR DATA: Takes a list of dfs with sensor data from each device
+# Ensures the number of dfs matches the number of device names and filters empty dfs
+# Steps through preprocessing pipeline: trim, rotation matrix, data synchronisation, tensor creation
 def process_aligned_sensor_data(aligned_dfs, df_names=None, output_path=None):
     if df_names is None:
         df_names = ['phone', 'earbuds', 'left_watch', 'right_watch']
@@ -122,7 +124,7 @@ def process_aligned_sensor_data(aligned_dfs, df_names=None, output_path=None):
 
     # Step 2: Calculate rotation matrices
     print("\nCalculating rotation matrices...")
-    rotated_trimmed_dfs_list = robust_rotation_matrices_dataframes(trimmed_dfs_list)
+    rotated_trimmed_dfs_list = rotation_matrix_df_conversion(trimmed_dfs_list)
 
     # Step 3: Synchronize dataframes
     print("\nSynchronizing dataframes...")
@@ -136,7 +138,6 @@ def process_aligned_sensor_data(aligned_dfs, df_names=None, output_path=None):
         full_synced_dfs[original_index] = synced_dfs[i]
 
     tensor = create_IMUPoser_tensor(full_synced_dfs, device_names=df_names, output_path=output_path) # type: ignore
-
     return synced_dfs, tensor
 
 

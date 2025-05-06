@@ -86,13 +86,13 @@ def apply_zscore_filtering_to_sensors(sensor_dfs, df_names=None, threshold=3.0):
         
         # Apply filtering to accelerometer data
         if accel_columns:
-            print(f"Filtering accelerometer data...")
+            print("Filtering accelerometer data...")
             df, accel_stats = filter_outliers_zscore(df, accel_columns, threshold)
             all_stats[f"{device_name}_accel"] = accel_stats
             
         # Apply filtering to gyroscope data
         if gyro_columns:
-            print(f"Filtering gyroscope data...")
+            print("Filtering gyroscope data...")
             df, gyro_stats = filter_outliers_zscore(df, gyro_columns, threshold)
             all_stats[f"{device_name}_gyro"] = gyro_stats
             
