@@ -4,7 +4,7 @@ import torch # type: ignore
 from preprocessing.imuDataPipeline import full_sensor_pipeline
 import streamlit as st # type: ignore
 from post_processing.generate_predictions import load_model, generate_prediction
-from post_processing.visualisepose import visuals_pipeline
+from post_processing.visualisepose import full_visualisation_pipeline
 
 def run_setup_script():
     """
@@ -225,7 +225,7 @@ def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=T
             st.text(traceback.format_exc())
 
 
-    visuals_pipeline()
+    full_visualisation_pipeline()
     
     return readable_device_names, tensor, predictions
 
