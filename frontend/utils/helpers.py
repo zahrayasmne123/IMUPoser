@@ -6,22 +6,26 @@ import streamlit as st # type: ignore
 from post_processing.generate_predictions import load_model, generate_prediction
 from post_processing.visualisepose import full_visualisation_pipeline
 
+################ HELPER FUNCTIONS ################
+#  Helper functions used accorss the application, helping to handle setting up the environment, 
+# processing sensor data files, running model generation, and generating visualisations.
+# 1. Run Setup Script: Minimal IMUPoser setup, looking for src directory and installs the IMUPoser package 
+#    without reinstalling dependencies
+# 2. Process Uploaded Files: Main function running the preprocessing pipeline stages to prepare data 
+#    before putting it into IMUPoser deep learning model. Creates output directories if they don't exist
+#    Calls full_visualisation_pipeline() to prepare the 3D pose visualisation
+#
+
 def run_setup_script():
-    """
-    Run the minimal setup commands for IMUPoser.
-    This simplified version assumes most dependencies are already installed.
-    """
-    # st.text("Setting up IMUPoser environment...")
-    
+
     try:
         # Find the IMUPoser src directory
-        src_dirs = ["./src", "../src", "/IMUPoser/src", "/src"]
+        potential_source_directories = ["./src", "../src", "/IMUPoser/src", "/src"]
         src_dir = None
         
-        for dir in src_dirs:
+        for dir in potential_source_directories:
             if os.path.exists(dir) and os.path.isdir(dir):
                 src_dir = dir
-                # st.text(f"Found IMUPoser src directory at: {src_dir}")
                 break
         
         if not src_dir:
@@ -42,74 +46,33 @@ def run_setup_script():
         st.error(f"Error during minimal setup: {str(e)}")
         return False
 
-def run_model_inference_subprocess(input_path, output_path, checkpoint_path, install_deps=True):
-    """
-    Run the inference using subprocess to call the command line directly.
-    """
-    import subprocess
-    import os
-    
-    st.text("Running model inference via command line...")
-    
-    # Make sure the directories exist
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    
-    if install_deps:
-        st.text("Verifying IMUPoser installation...")
-        try:
-            # Find and install the src directory as a package if needed
-            src_paths = ["./src", "../src", "/IMUPoser/src", "./IMUPoser/src"]
-            
-            for path in src_paths:
-                if os.path.exists(path) and os.path.isdir(path):
-                    st.text(f"Found source directory at {path}")
-                    # Only install if not already installed
-                    try:
-                        st.text("✓ IMUPoser package already installed")
-                        break
-                    except ImportError:
-                        subprocess.check_call([
-                            "pip", "install", "-e", path,
-                            "--no-dependencies",
-                            "--quiet"
-                        ])
-                        st.text(f"✓ IMUPoser package installed from {path}")
-                        break
-            else:
-                st.warning("Could not find IMUPoser source directory")
-                    
-        except Exception as e:
-            st.warning(f"Setup notice: {str(e)}")
-
-
 def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=True, checkpoint_path=None):
-    """ Process the uploaded IMU data files using the imuDataPipeline and run inference. """
     os.makedirs(output_dir, exist_ok=True)
     
     st.info("Starting pipeline processing...")
     
-    # Run the full sensor pipeline (handles all detection and processing)
+    # Run the full sensor pipeline (from preprocessing directory)
     st.text("Step 1: Processing sensor data...")
     synced_dfs, tensor = full_sensor_pipeline(data_dir=data_dir, output_path=os.path.join(output_dir, 'imuposer_data.pt'))
     
-    # Determine which devices were active (non-None in the synced_dfs)
+    # determine active devices from uploaded data files 
     device_names = ['phone', 'earbuds', 'left_watch', 'right_watch']
     active_device_indices = [i for i, df in enumerate(synced_dfs) if df is not None]
     active_devices = [device_names[i] for i in active_device_indices]
     
-    # Convert device names to more readable format
+    # convert device names for readability 
     readable_device_names = []
-    for device in active_devices:
-        if device == "phone":
+    for individual_device in active_devices:
+        if individual_device == "phone":
             readable_device_names.append("Phone")
-        elif device == "earbuds":
+        elif individual_device == "earbuds":
             readable_device_names.append("Earbuds")
-        elif device == "left_watch":
+        elif individual_device == "left_watch":
             readable_device_names.append("Left Watch")
-        elif device == "right_watch":
+        elif individual_device == "right_watch":
             readable_device_names.append("Right Watch")
     
-    st.text(f"✓ Successfully processed data from {len(readable_device_names)} device(s): {', '.join(readable_device_names)}")
+    st.text(f"Successfully processed data from {len(readable_device_names)} device(s): {', '.join(readable_device_names)}")
     
     # Save tensor
     tensor_path = os.path.join(output_dir, 'imuposer_data.pt')
@@ -124,16 +87,12 @@ def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=T
     
     predictions = None
     if run_model:
-        st.text("Step 2: Running model inference...")
+        st.text("Step 2: Making predictions with Model...")
+        model_setup_sucessful = run_setup_script()
         
-        # Set up environment before running inference
-        # This will install the IMUPoser package and dependencies
-        success = run_setup_script()
-        
-        if not success:
+        if not model_setup_sucessful:
             st.warning("Environment setup had issues. Attempting to continue anyway...")
         
-        # Use default checkpoint path if none provided
         if checkpoint_path is None:
             possible_paths = [
                 os.path.abspath("checkpoints/checkpoint.ckpt")]
@@ -148,21 +107,18 @@ def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=T
                 st.info("Please upload or specify the correct checkpoint path.")
                 
                
-        # Set output path for predictions
+        #  output directory path for predictions
         predictions_path = os.path.join(output_dir, 'predictions.pt')
 
 
         try:
-            # st.text("Imported inference functions directly")
-            
             model = load_model(checkpoint_path)
             predictions = generate_prediction(model, tensor_path, predictions_path)
             
-            st.text(f"✓ Generated predictions with shape: {predictions.shape}") # type: ignore
-            # st.text(f"✓ Saved predictions to: {predictions_path}")
+            st.text(f" Generated predictions with shape: {predictions.shape}") # type: ignore
                 
-        except ImportError as e:
-                st.text(f"Import error: {e}, trying subprocess method")
+        except ImportError:
+                st.text("Import error: trying subprocess method")
                 
                 # Use the subprocess method as fallback
                 script_path = None
@@ -208,19 +164,19 @@ def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=T
                     process.wait()
                     
                     if process.returncode == 0:
-                        st.text("✓ Model inference completed successfully")
+                        st.text("Model inference completed successfully")
                         try:
                             predictions = torch.load(predictions_path)
-                            st.text(f"✓ Loaded predictions with shape: {predictions.shape}")
-                        except Exception as e:
-                            st.error(f"Error loading predictions: {e}")
+                            st.text(f"Loaded predictions with shape: {predictions.shape}")
+                        except Exception:
+                            st.error("Error loading predictions")
                     else:
-                        st.error(f"Command failed with return code {process.returncode}")
+                        st.error("Command failed with return code")
                 else:
                     st.error("Could not find inference script")
             
-        except Exception as e:
-            st.error(f"Error during inference: {str(e)}")
+        except Exception:
+            st.error("Error model predictions")
             import traceback
             st.text(traceback.format_exc())
 
