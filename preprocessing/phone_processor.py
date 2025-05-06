@@ -28,8 +28,7 @@ class PhoneSensorAligner:
         
     def load_data(self, file_path):
         try:
-            # Read expected columns 
-            expected_columns = ['time'] + list(self.IMU_COLUMNS.keys())
+            expected_columns = ['time'] + list(self.IMU_COLUMNS.keys()) # Read expected columns names
             df = pd.read_csv(file_path, usecols=expected_columns)
             return df #return dataframe is sucessful 
         except Exception as e:
@@ -49,14 +48,13 @@ class PhoneSensorAligner:
         try:
             df = df.copy()
             
-            # Remove any unnamed columns
+            # remove any unnamed columns
             df = df.drop(columns=[col for col in df.columns if 'Unnamed:' in col], errors='ignore')
             
-            # Rename time column
+            # rename time column
             if 'time' in df.columns:
-                df = df.rename(columns={'time': 'timestamp'})
-            
-            # Convert units
+                df = df.rename(columns={'time': 'timestamp'}) 
+            # convert units
             for col in self.ACCELEROMETER_COLUMNS:
                 if col in df.columns:
                     df[col] = df[col].apply(self.convert_ms2_to_g)
@@ -65,7 +63,7 @@ class PhoneSensorAligner:
                 if col in df.columns:
                     df[col] = df[col].apply(self.convert_radians_to_degs)
             
-            # Rename to final column names
+            # rename to final column names
             df = df.rename(columns=self.IMU_COLUMNS)
             return df
             
