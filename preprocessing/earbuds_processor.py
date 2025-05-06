@@ -11,32 +11,32 @@ class EarbudSensorAligner:
        self.timestamp_columns = ['timestamp (+0000)', 'timestamp']
        self.epoch_columns = ['packetIndex']
 
-   def align_sensor_data(self, df):
-       if 'time' in df.columns:
-            df = df.rename(columns={'time': 'timestamp'})
+   def align_sensor_data(self, dataframe):
+       if 'time' in dataframe.columns:
+            dataframe = dataframe.rename(columns={'time': 'timestamp'})
 
        # Find and process timestamp column if it exists
-       timestamp_col = next((col for col in self.timestamp_columns if col in df.columns), None)
+       timestamp_col = next((column for column in self.timestamp_columns if column in dataframe.columns), None)
 
        if timestamp_col:
             try: #Creates a new 'time' column by extracting just the time portion from the timestamp
-                df['time'] = df[timestamp_col].apply(extract_time)
-                df = df.drop(columns=[timestamp_col]) #Drops the initial timestamp column in df
-                colum = ['time'] + [col for col in df.columns if col != 'time']
-                df = df[colum]
+                dataframe['time'] = dataframe[timestamp_col].apply(extract_time)
+                dataframe = dataframe.drop(columns=[timestamp_col]) #Drops the initial timestamp column in df
+                colum = ['time'] + [col for col in dataframe.columns if col != 'time']
+                dataframe = dataframe[colum]
             except Exception as e:
                 print(f"Error processing timestamps: {e}")
                 return None
 
        # Remove unecessary epoch columns
-       epoch_cols = [col for col in self.epoch_columns if col in df.columns]
+       epoch_cols = [column for column in self.epoch_columns if column in dataframe.columns]
        if epoch_cols:
-           df = df.drop(columns=epoch_cols)
+           dataframe = dataframe.drop(columns=epoch_cols)
 
-       return df
+       return dataframe
 
-def extract_time(ts):
-    ts_str = str(ts)
-    if 'T' in ts_str:
-        return ts_str.split('T')[1].split('.')[0]
-    return ts_str
+def extract_time(timestamp):
+    timestamp_string = str(timestamp)
+    if 'T' in timestamp_string:
+        return timestamp_string.split('T')[1].split('.')[0]
+    return timestamp_string
