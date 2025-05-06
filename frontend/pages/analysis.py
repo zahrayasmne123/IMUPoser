@@ -2,7 +2,6 @@ import streamlit as st # type: ignore
 import os
 from frontend.utils.device_data_upload import device_data_upload
 from frontend.utils.create_sensor_section import create_sensor_section
-from frontend.utils.pose_analysis import pose_analysis
 
 base_dir = "/dcs/22/u2254377/cs310/IMUPoser"
 ################## DATA ANALYSIS PAGE ############################
@@ -11,7 +10,6 @@ base_dir = "/dcs/22/u2254377/cs310/IMUPoser"
 # 3. On sub-page 2: Import data collection function
 # 4. On sub-Page 3: View pose visualisation: two columns, one with  frame-by-frame visualisation and slider, the 
 #               other with a  multi-view grid of poses
-# 5. On sub-page 4:Import pose analysis function for analytical tools and charts for the pose data
 
 def data_analysis_page():
     st.markdown("""
@@ -75,7 +73,6 @@ def data_analysis_page():
         "📱 Collect Device Data",
         "📤 Upload Device Data",
         "🎥 3D Pose Visualisation",
-        "📈 Pose Analysis"
     ])
 
     with sub_page[0]:
@@ -156,8 +153,6 @@ def data_analysis_page():
             else:
                 st.info("Multi-view grid not available. Generate visualisations to create it.")
 
-    with sub_page[3]: 
-        pose_analysis(base_dir)
 
         
         
