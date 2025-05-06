@@ -42,26 +42,6 @@ def trim_dataframes(dataframes, df_names):
             dataframes[i] = df.rename(columns={'time': 'timestamp'})
             print(f"Renamed 'time' to 'timestamp' in {df_names[i]}")
     
-    # Print first few timestamps to debug
-    for i, df in enumerate(dataframes):
-        if 'timestamp' in df.columns and len(df) > 0:
-            print(f"{df_names[i]} first timestamps: {df['timestamp'].head(3).tolist()}")
-    
-    # Add milliseconds for comparison - with better error handling
-    for i, df in enumerate(dataframes):
-        try:
-            if 'timestamp' in df.columns:
-                # Print timestamp format for debugging
-                first_ts = df['timestamp'].iloc[0] if len(df) > 0 else "No data"
-                print(f"{df_names[i]} first timestamp format: {first_ts}")
-                
-                # Add a safer ms conversion
-                dataframes[i]['time_ms'] = df['timestamp'].apply(time_to_ms)
-        except Exception as e:
-            print(f"Error processing timestamps for {df_names[i]}: {e}")
-            # Use a simple index-based timestamp as fallback
-            dataframes[i]['time_ms'] = range(len(df))
-    
     # Find common time range
     min_times = []
     max_times = []
