@@ -4,9 +4,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import os
 import imageio.v2 as imageio_v2
-
 from imuposer.smpl.parametricModel import ParametricModel
-from imuposer.math.angular import r6d_to_rotation_matrix
 
 base_dir = "/dcs/22/u2254377/cs310/IMUPoser"
 
@@ -269,48 +267,61 @@ def save_animated_sequence_with_dots(
 
 
 
-# Convert poses to joint positions
 def convert_poses_to_joints(
     predictions,
-    smpl_model_path= os.path.join(base_dir, "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
+    smpl_model_path=os.path.join(base_dir, "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
 ):
     """Convert pose predictions to 3D joint positions using SMPL"""
-
-    # If SMPL model path not provided, use default
-    if smpl_model_path is None:
-        root_dir = Path(__file__).resolve().parent.parent
-        smpl_model_path = root_dir / "src/imuposer/smpl/model.pkl"
-        if not smpl_model_path.exists():
-            smpl_model_path = (
-                root_dir / "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl"
-            )
-
-    print(f"Using SMPL model from: {smpl_model_path}")
+    from imuposer.math.angular import axis_angle_to_rotation_matrix, r6d_to_rotation_matrix
 
     # Initialize SMPL model
+    print(f"Using SMPL model from: {smpl_model_path}")
     body_model = ParametricModel(str(smpl_model_path), device=torch.device("cpu"))
 
     # Get batch size and sequence length
     batch_size, seq_len, n_params = predictions.shape
-
-    # Convert 6D rotation to rotation matrices (if needed)
-    if n_params == 144:  # 24 joints * 6 params (6D representation)
+    
+    # Flatten the batch and sequence dimensions
+    poses_reshape = predictions.reshape(-1, n_params)
+    
+    # Determine input format and convert if needed
+    if n_params == 72:  # axis-angle format
+        print("Converting axis-angle rotations to rotation matrices...")
+        # Convert each axis-angle to a 3x3 rotation matrix
+        rot_matrices = axis_angle_to_rotation_matrix(poses_reshape)
+        
+        # For SMPL, we need matrices in shape [batch_size*seq_len, 24, 3, 3]
+        # First reshape to group by joints
+        rot_matrices = rot_matrices.reshape(-1, 24, 3, 3)
+        
+        # Then flatten the last two dimensions to get [batch_size*seq_len, 24, 9]
+        poses_matrices = rot_matrices.reshape(-1, 24, 9)
+        
+        # Finally flatten to [batch_size*seq_len, 216]
+        poses_matrices = poses_matrices.reshape(-1, 216)
+        
+    elif n_params == 144:  # 6D representation
         print("Converting 6D rotations to rotation matrices...")
-        # Reshape to [batch_size*seq_len, num_joints*6]
-        poses_reshape = predictions.reshape(-1, n_params)
-        # Convert to rotation matrices [batch_size*seq_len, 216] (24 joints * 9 params)
-        poses_matrices = r6d_to_rotation_matrix(poses_reshape).reshape(-1, 216)
+        # Reshape to 24 joints x 6 parameters
+        poses_6d = poses_reshape.reshape(-1, 24, 6)
+        
+        # Convert each 6D rotation to a 3x3 matrix
+        rot_matrices = torch.zeros(poses_6d.shape[0], 24, 3, 3, device=poses_6d.device)
+        for j in range(24):
+            rot_matrices[:, j] = r6d_to_rotation_matrix(poses_6d[:, j])
+        
+        # Flatten for SMPL
+        poses_matrices = rot_matrices.reshape(-1, 216)
+        
+    elif n_params == 216:  # Already matrices
+        poses_matrices = poses_reshape
     else:
-        # Assume already in rotation matrix format
-        poses_matrices = predictions.reshape(-1, 216)  # [batch_size*seq_len, 216]
+        raise ValueError(f"Unexpected pose parameter size: {n_params}. Expected 72, 144, or 216.")
 
-    print(
-        f"Computing joint positions for {batch_size} sequences with {seq_len} frames each..."
-    )
-
+    print("Running SMPL forward kinematics...")
     # Get joint positions from SMPL
-    # This returns global poses and joint positions
     result = body_model.forward_kinematics(pose=poses_matrices)
+    
     if len(result) == 2:
         _, joints = result
     else:

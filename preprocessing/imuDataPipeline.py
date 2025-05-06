@@ -35,7 +35,7 @@ def is_accelerometer_file(file_path):
         # IMPORTANT: Trust the filename over the contents
         # If it has "Accelerometer" in the name, it IS an accelerometer file
         if "accelerometer" in os.path.basename(file_path).lower():
-            print(f"  Identified as accelerometer file based on filename")
+            print("Identified as accelerometer file based on filename")
             return True
         
         # If no clue from filename, check the headers as fallback
@@ -62,7 +62,7 @@ def is_gyroscope_file(file_path):
         # IMPORTANT: Trust the filename over the contents
         # If it has "Gyroscope" in the name, it IS a gyroscope file regardless of column headers
         if "gyroscope" in os.path.basename(file_path).lower():
-            print(f"  Identified as gyroscope file based on filename")
+            print("Identified as gyroscope file based on filename")
             return True
             
         # If no clue from filename, check the headers as fallback
@@ -142,7 +142,7 @@ def find_sensor_files(data_directory):
     # Detect earbuds file - contains 'esense' in filename
     earbud_files = [f for f in csv_files if 'esense' in f.lower()]
     if earbud_files:
-        data_files['earbud'] = earbud_files[0]
+        data_files['earbud'] = earbud_files[0] # type: ignore
         print(f"Found earbud file: {os.path.basename(data_files['earbud'])}")
         # Remove from list to avoid double-matching
         csv_files = [f for f in csv_files if f not in earbud_files]
@@ -161,19 +161,19 @@ def find_sensor_files(data_directory):
         
         # Assign based on filename patterns with high confidence
         if is_left and is_accel_by_name and data_files['left_accel'] is None:
-            data_files['left_accel'] = file
+            data_files['left_accel'] = file  # type: ignore
             print(f"Found left watch accelerometer file (by filename): {os.path.basename(file)}")
             csv_files.remove(file)
         elif is_left and is_gyro_by_name and data_files['left_gyro'] is None:
-            data_files['left_gyro'] = file
+            data_files['left_gyro'] = file  # type: ignore
             print(f"Found left watch gyroscope file (by filename): {os.path.basename(file)}")
             csv_files.remove(file)
         elif is_right and is_accel_by_name and data_files['right_accel'] is None:
-            data_files['right_accel'] = file
+            data_files['right_accel'] = file  # type: ignore
             print(f"Found right watch accelerometer file (by filename): {os.path.basename(file)}")
             csv_files.remove(file)
         elif is_right and is_gyro_by_name and data_files['right_gyro'] is None:
-            data_files['right_gyro'] = file
+            data_files['right_gyro'] = file  # type: ignore
             print(f"Found right watch gyroscope file (by filename): {os.path.basename(file)}")
             csv_files.remove(file)
     
@@ -190,10 +190,10 @@ def find_sensor_files(data_directory):
         print(f"\nProcessing {len(left_files)} remaining left watch files...")
         for file in left_files:
             if is_accelerometer_file(file) and data_files['left_accel'] is None:
-                data_files['left_accel'] = file
+                data_files['left_accel'] = file  # type: ignore
                 print(f"Found left watch accelerometer file: {os.path.basename(file)}")
             if is_gyroscope_file(file) and data_files['left_gyro'] is None:
-                data_files['left_gyro'] = file
+                data_files['left_gyro'] = file  # type: ignore
                 print(f"Found left watch gyroscope file: {os.path.basename(file)}")
     
     # Process right watch files
@@ -201,10 +201,10 @@ def find_sensor_files(data_directory):
         print(f"\nProcessing {len(right_files)} remaining right watch files...")
         for file in right_files:
             if is_accelerometer_file(file) and data_files['right_accel'] is None:
-                data_files['right_accel'] = file
+                data_files['right_accel'] = file  # type: ignore
                 print(f"Found right watch accelerometer file: {os.path.basename(file)}")
             if is_gyroscope_file(file) and data_files['right_gyro'] is None:
-                data_files['right_gyro'] = file
+                data_files['right_gyro'] = file  # type: ignore
                 print(f"Found right watch gyroscope file: {os.path.basename(file)}")
     
     # Handle phone files
@@ -229,7 +229,7 @@ def find_sensor_files(data_directory):
             phone_file = unassigned_files[0]
             print(f"Found phone file: {os.path.basename(phone_file)}")
         
-        data_files['phone'] = phone_file
+        data_files['phone'] = phone_file  # type: ignore
     else:
         print("No unassigned files available for phone data")
     
@@ -300,9 +300,9 @@ def align_all_sensor_data(data_directory):
             
             # Debug info
             print(f"\nLeft accelerometer columns: {leftaccel_df.columns.tolist()}")
-            print(f"Left gyroscope columns: {leftgyro_df.columns.tolist()}")
+            print(f"Left gyroscope columns: {leftgyro_df.columns.tolist()}")  # type: ignore
             print(f"Left accelerometer data sample:\n{leftaccel_df.head(2)}")
-            print(f"Left gyroscope data sample:\n{leftgyro_df.head(2)}")
+            print(f"Left gyroscope data sample:\n{leftgyro_df.head(2)}")  # type: ignore
 
             left_watch_aligned_df = watch_aligner.align_sensor_data(leftaccel_df, leftgyro_df)
             print("Successfully processed left watch data")
@@ -328,7 +328,7 @@ def align_all_sensor_data(data_directory):
             
             # Debug info
             print(f"\nRight accelerometer columns: {rightaccel_df.columns.tolist()}")
-            print(f"Right gyroscope columns: {rightgyro_df.columns.tolist()}")
+            print(f"Right gyroscope columns: {rightgyro_df.columns.tolist()}")  # type: ignore
             
             right_watch_aligned_df = watch_aligner.align_sensor_data(rightaccel_df, rightgyro_df)
             print("Successfully processed right watch data")
