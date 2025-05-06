@@ -155,8 +155,8 @@ def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=T
         try:
             # st.text("Imported inference functions directly")
             
-            model = load_model(checkpoint_path, device='cpu')
-            predictions = generate_prediction(model, tensor_path, predictions_path, device='cpu')
+            model = load_model(checkpoint_path)
+            predictions = generate_prediction(model, tensor_path, predictions_path)
             
             st.text(f"✓ Generated predictions with shape: {predictions.shape}") # type: ignore
             # st.text(f"✓ Saved predictions to: {predictions_path}")

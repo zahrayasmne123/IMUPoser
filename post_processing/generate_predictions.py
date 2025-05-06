@@ -1,35 +1,36 @@
 import torch
 from pathlib import Path
-
 from src.imuposer.config import Config, amass_combos
 from src.imuposer.models.LSTMs.IMUPoser_Model import IMUPoserModel
-
+import os
 base_dir = "/dcs/22/u2254377/cs310/IMUPoser"
 
-def load_model(checkpoint_path, device='cpu'):
-    # Disable CUDA explicitly
-    import os
-    os.environ['CUDA_VISIBLE_DEVICES'] = ''
-    
+""" GENERATE PREDICTIONS.PY: Main file handling loading a pre-trained LSTM and runs inference to produce
+pose predictions using the model as a 'black box'
+
+1. Load Model: This function loads a pre-trained IMUPoser from a saved checkpoint file. Function 
+configures the model to run on CPU and loads the model weights and configuration from the checkpoint
+It returns the model in evaluation mode ready for inference
+2. Generate Predictions: First ensures CPU is being used, then loads IMU data from a tensor file, 
+processes it to match model's input format uses it for 3d body pose estimation
+
+"""
+def load_model(checkpoint_path):
+    os.environ['CUDA_VISIBLE_DEVICES'] = '' # Disable CUDA explicitly, force all computation to happen on CPU
+    device=torch.device('cpu')
     try:
-        # Make sure checkpoint exists
+        # Ensure sure checkpoint exists
         checkpoint_path = Path(checkpoint_path)
         if not checkpoint_path.exists():
-            raise FileNotFoundError(f"Checkpoint not found at {checkpoint_path}")
-        
+            raise FileNotFoundError("Checkpoint not found")
         print(f"Loading model from checkpoint: {checkpoint_path}")
         
-        # Force CPU device
-        device = torch.device('cpu')
-        
         # Load checkpoint with CPU mapping
-        checkpoint = torch.load(checkpoint_path, map_location=torch.device('cpu'))
-        
-        # Determine configuration
+        checkpoint = torch.load(checkpoint_path, map_location=device)
         if 'hyper_parameters' in checkpoint and 'config' in checkpoint['hyper_parameters']:
             config_dict = checkpoint['hyper_parameters']['config']
             
-            # Explicitly create Config with CPU device
+            # Ceate Config with CPU device
             config = Config(
                 experiment=config_dict.experiment if hasattr(config_dict, 'experiment') else "IMUPoserGlobalModel",
                 model=config_dict.model if hasattr(config_dict, 'model') else "GlobalModelIMUPoser",
@@ -43,7 +44,7 @@ def load_model(checkpoint_path, device='cpu'):
                 og_smpl_model_path=  os.path.join(base_dir, "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
             )
         else:
-            # Fallback configuration
+            # Use fall back configuration
             config = Config(
                 experiment="IMUPoserGlobalModel",
                 model="GlobalModelIMUPoser",
@@ -56,10 +57,6 @@ def load_model(checkpoint_path, device='cpu'):
                 device='cpu',
                 og_smpl_model_path=  os.path.join(base_dir, "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
             )
-        
-        # Verify SMPL model path
-        if not config.og_smpl_model_path.exists():
-            raise FileNotFoundError(f"SMPL model not found at {config.og_smpl_model_path}")
         
         # Create model instance
         model = IMUPoserModel(config)
@@ -75,38 +72,29 @@ def load_model(checkpoint_path, device='cpu'):
         # Ensure model is in evaluation mode and on CPU
         model = model.to(torch.device('cpu'))
         model.eval()
-        
         print("Model loaded successfully")
         return model
     
     except Exception as e:
         print(f"Error loading model: {e}")
         raise
+
+
+
+
     
-def generate_prediction(model, input_tensor_path, output_path=None, device='cpu'):
-    """
-    Run inference with the loaded model
-    """
-    # Force device to CPU
-    device = torch.device('cpu')
-    
-    # Load input tensor
-    input_tensor_path = Path(input_tensor_path)
-    if not input_tensor_path.exists():
-        raise FileNotFoundError(f"Input tensor not found at {input_tensor_path}")
-    
+def generate_prediction(model, input_tensor_path,output_path=None):
+    device = torch.device('cpu') # Disable CUDA explicitly, force all computation to happen on CPU
+    input_tensor_path = Path(input_tensor_path) # Load input tensor
     print(f"Loading input tensor from: {input_tensor_path}")
+    input_data = torch.load(input_tensor_path, map_location=device) # Load tensor with CPU mapping
     
-    # Load tensor with CPU mapping
-    input_data = torch.load(input_tensor_path, map_location=torch.device('cpu'))
-    
-    # Extract the IMU data tensor
     if isinstance(input_data, dict) and 'imu_data' in input_data:
-        input_tensor = input_data['imu_data']
+        input_tensor = input_data['imu_data'] # Extract IMU data from dictionary
     else:
         input_tensor = input_data
     
-    # Ensure tensor is on CPU and float type
+    # Tenson is on CPU and correct type
     if isinstance(input_tensor, torch.Tensor):
         input_tensor = input_tensor.to(device).float()
     else:
@@ -114,26 +102,23 @@ def generate_prediction(model, input_tensor_path, output_path=None, device='cpu'
     
     print(f"Input tensor shape: {input_tensor.shape}")
     
-    # Prepare input for model
-    # Add batch dimension if needed
-    if len(input_tensor.shape) == 2:
-        input_tensor = input_tensor.unsqueeze(0)
+    # Prepare input for model (model expects [batch_size, seq_length, features])
+    if len(input_tensor.shape) == 2: #
+        input_tensor = input_tensor.unsqueeze(0)  # Add batch dimension at position 0
     
-    # Get sequence length for each batch (all frames in this case)
+    # Get sequence length for each batch
     seq_length = input_tensor.shape[1]
     input_lengths = torch.tensor([seq_length], device=device, dtype=torch.long)
     
     # Run inference
     print("Running inference...")
-    with torch.no_grad():
+    with torch.no_grad(): # Disable gradient calculation to reduce memory usage
         # Ensure model is in evaluation mode and on CPU
         model.eval()
         model = model.to(device)
-        
         predictions = model(input_tensor, input_lengths)
     
-    # Process predictions (depends on model output format)
-    # Based on the model code, we're selecting the pose parameters
+    # Extract pose predictions from model output
     if isinstance(predictions, tuple) and len(predictions) >= 1:
         pose_predictions = predictions[0]
     else:
@@ -141,8 +126,6 @@ def generate_prediction(model, input_tensor_path, output_path=None, device='cpu'
     
     # Ensure predictions are on CPU and float type
     pose_predictions = pose_predictions.to(device).float() # type: ignore
-    
-    # Select pose parameters if needed (based on your model architecture)
     if hasattr(model, 'n_pose_output') and isinstance(pose_predictions, torch.Tensor) and pose_predictions.shape[-1] > model.n_pose_output:
         pose_predictions = pose_predictions[:, :, :model.n_pose_output]
     
