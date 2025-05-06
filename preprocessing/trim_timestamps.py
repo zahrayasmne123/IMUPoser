@@ -35,16 +35,13 @@ def trim_dataframes(dataframes, df_names):
         if 'timestamp' not in df.columns and 'time' in df.columns:
             dataframes[i] = df.rename(columns={'time': 'timestamp'})
     
-    # Find common time range
+    # Initialise lists for common timestamps 
     min_times = []
     max_times = []
     
     for i, df in enumerate(dataframes):
         try:
             if 'timestamp' in df.columns:
-                # Print timestamp format for debugging
-                first_ts = df['timestamp'].iloc[0] if len(df) > 0 else "No data"
-                print(f"{df_names[i]} first timestamp format: {first_ts}")
                 dataframes[i]['time_ms'] = df['timestamp'].apply(time_to_ms)
         except Exception as e:
             print(f"Error processing timestamps for {df_names[i]}: {e}")
