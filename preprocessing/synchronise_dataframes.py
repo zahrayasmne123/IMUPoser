@@ -2,155 +2,122 @@ import pandas as pd
 import numpy as np
 from scipy import interpolate
 
-def robust_synchronise_dataframes(dfs, device_names):
-    """
-    Robust synchronization of dataframes with improved NaN handling
-    
-    Parameters:
-    - dfs: List of input dataframes
-    - device_names: Corresponding names of devices
-    
-    Returns:
-    - List of synchronized dataframes
-    """
-    processed_dfs = []
-    
-    # Standardize timestamp formats
-    for df in dfs:
-        if 'timestamp' in df.columns:
-            # Extract time components from the various formats and create standard format
-            df['timestamp'] = df['timestamp'].apply(
-                lambda ts: ts.split('T')[1].replace('.', ':').split('+')[0] if 'T' in ts else ts
-            )
+
+"""SYNCHRONISE DATAFRAMES: Data synchronisation for data collected from across multiple devices. It 
+aligns timestamped data, handles different timestamp formats and interpolating sensor values to a
+consistent sampling rate. This means data from the different sources can be compared. 
+
+1. Extract time: Checks if timestamp has a 'T' string and if so splits here to
+ takes the second part (the time)
+2. Prepare Timestamp: Use extract time function to find time and convert timestamps to datetime
+3. Find Common Time Frame: Find common time range and generate target timestamps
+4. Resample Dataframes:Transform  original data with different sampling rates into consistent data
+aligned to timestamps. For each numeric column: a linear interpolation function is made and values at each target 
+timestamp are calculated. Missing values are replced them with mean values
+5. Sync Dataframes: Puts previous functions together in a pipeline to synchronise dataframes
+"""
+
+#Split time on char "T"
+def extract_time(timestamp):
+    if 'T' in timestamp:
+        return timestamp.split('T')[1].replace('.', ':').split('+')[0]
+    return timestamp
+
+
+def standardise_timestamps(dfs):
+    for individual_df in dfs:
+        if 'timestamp' in individual_df.columns:
+            individual_df['timestamp'] = individual_df['timestamp'].apply(extract_time)
     
     # Convert timestamps to datetime
-    for df in dfs:
+    for individual_df in dfs:
         try:
-            # Add a date part to make valid datetime
-            df['timestamp'] = pd.to_datetime(
-                '2025-02-25 ' + df['timestamp'].str.replace(':', '.', n=3),
+            individual_df['timestamp'] = pd.to_datetime( 
+                '2025-02-25 ' + individual_df['timestamp'].str.replace(':', '.', n=3), 
                 format='%Y-%m-%d %H.%M.%S.%f',
                 errors='coerce'
             )
-        except Exception as e:
-            print(f"Error converting timestamps: {e}")
-            print(f"Sample timestamps: {df['timestamp'].head().tolist()}")
+        except Exception:            
+            print("Error converting timestamps")
+            print(f"Sample timestamps: {individual_df['timestamp'].head().tolist()}")
     
-    # Find common time range
-    start_time = max(df['timestamp'].min() for df in dfs)
+    return dfs
+
+def find_common_time_frame(dfs):
+    # Time duration is the latest start time and earliest end time 
+    start_time = max(df['timestamp'].min() for df in dfs).round('ms')
     end_time = min(df['timestamp'].max() for df in dfs)
-    start_time = start_time.round('ms')
+    duration_seconds = (end_time - start_time).total_seconds()
     
-    print("\nCommon time range:")
+    print("\nCommon time range:") #For debugging 
     print(f"Start: {start_time}")
     print(f"End: {end_time}")
-    print(f"Duration: {(end_time - start_time).total_seconds():.2f} seconds")
     
-    # Generate target timestamps at 30 FPS
-    fps = 30
-    duration_seconds = (end_time - start_time).total_seconds()
-    num_frames = int(duration_seconds * fps)
-    
+    # Generate target timestamps at 30
+    num_frames = int(duration_seconds * 30)
     target_timestamps = [
-        start_time + pd.Timedelta(seconds=i/fps) 
+        start_time + pd.Timedelta(seconds=i/30) 
         for i in range(num_frames)
     ]
+    
+    return start_time, target_timestamps, num_frames
+
+
+def resample_dataframes(dfs, device_names, start_time, target_timestamps, num_frames):
+    processed_dfs = []
     
     # Process each dataframe
     for df, name in zip(dfs, device_names):
         print(f"\nProcessing {name}...")
         
-        # Filter out rows outside the common time range
-        df_filtered = df[(df['timestamp'] >= start_time) & (df['timestamp'] <= end_time)].copy()
+        # Remove any rows outside the common time range
+        valid_timeframe_df = df[(df['timestamp'] >= start_time) & 
+                         (df['timestamp'] <= target_timestamps[-1])].copy()
         
-        # Prepare resampled data
         resampled_data = {'timestamp': target_timestamps}
-        
-        # Identify numeric columns
         numeric_columns = df.select_dtypes(include=[np.number]).columns
         
+        #time relative to start for interpolation
+        x = (valid_timeframe_df['timestamp'] - start_time).dt.total_seconds() #converts the time difference to seconds 
+        x_new = (pd.Series(target_timestamps) - start_time).dt.total_seconds()
+        
         for col in numeric_columns:
-            # Use original timestamp for interpolation
-            x = (df_filtered['timestamp'] - start_time).dt.total_seconds()
-            y = df_filtered[col].values
-            
-            # Create interpolation function with more robust method
-            f = interpolate.interp1d(
-                x, 
-                y, 
-                kind='linear',  # Changed from 'cubic' to 'linear' for more stability
-                bounds_error=False,
-                fill_value='extrapolate'
-            )
-            
-            # Generate new x values based on target timestamps
-            x_new = (pd.Series(target_timestamps) - start_time).dt.total_seconds()
+            y = valid_timeframe_df[col].values
             
             try:
-                # Interpolate the values
-                interpolated_values = f(x_new)
-                
-                # Additional NaN handling
-                interpolated_values = np.nan_to_num(
-                    interpolated_values, 
-                    nan=np.nanmean(interpolated_values)  # Replace NaNs with mean
+                # interpolation function
+                f = interpolate.interp1d(
+                    x, y, kind='linear',
+                    bounds_error=False, fill_value='extrapolate' # type: ignore
                 )
                 
-                resampled_data[col] = interpolated_values
+                # Interpolate values and handle NaNs
+                interpolated_values = f(x_new)
+
+        
+                mean_value = np.nanmean(interpolated_values)
+                resampled_data[col] = np.nan_to_num(interpolated_values, nan=mean_value) #missing values = mean
             
             except Exception as e:
                 print(f"Error interpolating {col} for {name}: {e}")
-                # Fallback: use original column with padding/truncating
-                interpolated_values = np.pad(
-                    y, 
-                    (0, num_frames - len(y)), 
-                    mode='constant', 
-                    constant_values=np.mean(y)
-                )[:num_frames]
-                resampled_data[col] = interpolated_values
         
-        # Create resampled dataframe
-        df_resampled = pd.DataFrame(resampled_data)
-        
-        # Scale acceleration values (optional, adjust as needed)
-        scale_factor = 1/30
-        acc_columns = [col for col in df_resampled.columns if 'axis (m/s^2)' in col]
-        for col in acc_columns:
-            df_resampled[col] *= scale_factor
-        
-        # Convert timestamp back to string format
-        df_resampled['timestamp'] = df_resampled['timestamp'].dt.strftime('%H:%M:%S:%f').str[:-3]
-        
-        processed_dfs.append(df_resampled)
-    
-    # Validate synchronization
-    validate_synchronization(processed_dfs, device_names)
+        # New resampled dataframe
+        fps30_resampled = pd.DataFrame(resampled_data)
+        fps30_resampled['timestamp'] = fps30_resampled['timestamp'].dt.strftime('%H:%M:%S:%f').str[:-3]
+        processed_dfs.append(fps30_resampled)
     
     return processed_dfs
 
-def validate_synchronization(dfs, device_names):
-    """
-    Validate synchronization of dataframes
+
+
+def sync_dataframes(dfs, device_names):
+    dfs = standardise_timestamps(dfs)
     
-    Parameters:
-    - dfs: List of synchronized dataframes
-    - device_names: Corresponding device names
-    """
-    print("\nValidation Results:")
-    print("-" * 50)
+    start_time, target_timestamps, num_frames = find_common_time_frame(dfs)
     
-    # Check row counts
-    row_counts = [len(df) for df in dfs]
-    print(f"Row counts: {dict(zip(device_names, row_counts))}")
-    
-    if len(set(row_counts)) != 1:
-        print("❌ WARNING: Different number of rows detected!")
-    else:
-        print("✓ All devices have the same number of rows")
-    
-    # Check for NaNs
-    for df, name in zip(dfs, device_names):
-        nan_counts = df.isna().sum()
-        print(f"\nNaN counts for {name}:")
-        print(nan_counts[nan_counts > 0])
+    processed_dfs = resample_dataframes(dfs, device_names, start_time, 
+                                       target_timestamps, num_frames)
+
+    return processed_dfs
+
 

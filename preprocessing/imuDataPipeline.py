@@ -2,7 +2,7 @@ from .phone_processor import PhoneSensorAligner
 from .watch_processor import WatchSensorAligner
 from .earbuds_processor import EarbudSensorAligner
 from .rotation_processor import rotation_matrix_df_conversion
-from .synchronise_dataframes import robust_synchronise_dataframes
+from .synchronise_dataframes import sync_dataframes
 from .csvtotensor import create_IMUPoser_tensor
 from .trim_timestamps import trim_dataframes
 from .read_data_files import read_csv, find_sensor_files
@@ -126,7 +126,7 @@ def process_aligned_sensor_data(aligned_dfs, output_path=None):
 
     # 3. Synchronize dataframes
     print("\nSynchronizing dataframes...")
-    synced_dfs = robust_synchronise_dataframes(rotated_trimmed_dfs_list, valid_names)
+    synced_dfs = sync_dataframes(rotated_trimmed_dfs_list, valid_names)
 
     #4. Create IMUPoser tensor
     print("\nCreating IMUPoser tensor...")
