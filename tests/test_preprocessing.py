@@ -6,13 +6,12 @@ import numpy as np
 from preprocessing.phone_processor import PhoneSensorAligner
 from preprocessing.watch_processor import WatchSensorAligner
 from preprocessing.earbuds_processor import EarbudSensorAligner
-from preprocessing.trim_timestamps import*  # noqa: F403
-from preprocessing.imuDataPipeline import*  # noqa: F403
+from preprocessing.trim_timestamps import time_to_ms, trim_dataframes
+from preprocessing.imuDataPipeline import is_accelerometer_file, is_gyroscope_file, find_sensor_files, fix_gyroscope_columns, correct_gyroscope_bias
 
 
 class TestPhoneSensorAligner(unittest.TestCase):
     """Basic unit tests for PhoneSensorAligner class"""
-    
     def setUp(self):
         self.aligner = PhoneSensorAligner()
         
@@ -44,7 +43,7 @@ class TestPhoneSensorAligner(unittest.TestCase):
         expected_columns = ['timestamp', 'x-axis (g)', 'y-axis (g)', 'z-axis (g)', 
                            'x-axis (deg/s)', 'y-axis (deg/s)', 'z-axis (deg/s)']
         for col in expected_columns:
-            self.assertIn(col, result.columns)
+            self.assertIn(col, result.columns) # type: ignore
 
 
 class TestWatchSensorAligner(unittest.TestCase):
@@ -75,7 +74,7 @@ class TestWatchSensorAligner(unittest.TestCase):
         """Test timestamp processing"""
         result = self.aligner.process_timestamp(self.accel_data)
         self.assertIsNotNone(result)
-        self.assertIn('timestamp', result.columns)
+        self.assertIn('timestamp', result.columns) # type: ignore
     
     def test_align_sensor_data(self):
         """Test sensor data alignment and merging"""
@@ -108,8 +107,8 @@ class TestEarbudSensorAligner(unittest.TestCase):
         """Test sensor data alignment"""
         result = self.aligner.align_sensor_data(self.sample_data)
         self.assertIsNotNone(result)
-        self.assertIn('time', result.columns)
-        self.assertNotIn('packetIndex', result.columns)
+        self.assertIn('time', result.columns) # type: ignore
+        self.assertNotIn('packetIndex', result.columns) # type: ignore
 
 
 class TestIntegration(unittest.TestCase):
@@ -294,9 +293,9 @@ class TestIntegrationPipeline(unittest.TestCase):
         fixed_df = fix_gyroscope_columns(df)
         
         # Check that column headers were fixed
-        self.assertIn('x-axis (deg/s)', fixed_df.columns)
-        self.assertIn('y-axis (deg/s)', fixed_df.columns)
-        self.assertIn('z-axis (deg/s)', fixed_df.columns)
+        self.assertIn('x-axis (deg/s)', fixed_df.columns) # type: ignore
+        self.assertIn('y-axis (deg/s)', fixed_df.columns) # type: ignore
+        self.assertIn('z-axis (deg/s)', fixed_df.columns) # type: ignore
     
     def test_correct_gyroscope_bias(self):
         """Test gyroscope bias correction"""
