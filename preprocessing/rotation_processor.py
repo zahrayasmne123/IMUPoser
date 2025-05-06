@@ -1,42 +1,7 @@
 import pandas as pd
 import numpy as np
 
-def validate_dataframe(df):
-    """Perform comprehensive data validation before processing."""
-    # Check for NaN values
-    nan_counts = df.isna().sum()
-    print("NaN counts before processing:")
-    print(nan_counts)
-    
-    # Check for infinite values
-    inf_counts = np.isinf(df.select_dtypes(include=[np.number])).sum()
-    print("\nInfinite value counts:")
-    print(inf_counts)
-    
-    # Basic statistical validation
-    print("\nBasic statistical validation:")
-    for col in df.select_dtypes(include=[np.number]).columns:
-        stats = df[col].describe()
-        print(f"\n{col} statistics:")
-        print(f"Min: {stats['min']}")
-        print(f"Max: {stats['max']}")
-        print(f"Mean: {stats['mean']}")
-        print(f"Standard Deviation: {stats['std']}")
-
 def robust_normalize_acceleration(df, convert_to_zero=True):
-    """
-    Robust acceleration normalization with error handling.
-    
-    Args:
-        df (pd.DataFrame): Input dataframe
-        convert_to_zero (bool): If True, replace NaN/Inf with 0
-    
-    Returns:
-        pd.DataFrame: Normalized dataframe
-    """
-    # Validate input first
-    validate_dataframe(df)
-    
     scale_factor = 30
     conversion_factor = 9.81  # Convert g to m/s^2
 
@@ -60,37 +25,24 @@ def robust_normalize_acceleration(df, convert_to_zero=True):
 
     return df
 
-
-
 def robust_compute_rotation_matrix(gyro_x, gyro_y, gyro_z, delta_t=1/60):
-    """
-    Enhanced robust rotation matrix computation with advanced numerical stability techniques.
-    
-    Args:
-        gyro_x, gyro_y, gyro_z (float): Gyroscope readings in degrees/sec
-        delta_t (float): Time delta, default 1/60 second
-    
-    Returns:
-        np.ndarray: Rotation matrix with improved numerical stability
-    """
-    # Comprehensive input validation and preprocessing
+    # Safely convert inputs
     def safe_value(x, default=0.0):
-        """Safely handle numeric inputs."""
         try:
             return float(x) if np.isfinite(x) else default
         except (TypeError, ValueError):
             return default
     
-    # Safely convert inputs
+    # Constants
+    EPSILON = 1e-6
+    ANGULAR_THRESHOLD = 1e-3  # Degrees per second
+    
+    # Process inputs
     wx = safe_value(gyro_x)
     wy = safe_value(gyro_y)
     wz = safe_value(gyro_z)
     
-    # Numerical stability threshold
-    EPSILON = 1e-6
-    ANGULAR_THRESHOLD = 1e-3  # Degrees per second
-    
-    # Convert to radians with additional safety
+    # Convert to radians
     try:
         wx_rad = np.radians(wx)
         wy_rad = np.radians(wy)
@@ -98,49 +50,23 @@ def robust_compute_rotation_matrix(gyro_x, gyro_y, gyro_z, delta_t=1/60):
     except Exception:
         wx_rad, wy_rad, wz_rad = 0.0, 0.0, 0.0
     
-    # Compute angular displacement with extreme care
-    def safe_angular_displacement(angular_velocity, time_delta):
-        """
-        Compute angular displacement with multiple numerical stability techniques.
-        
-        Handles:
-        - Very small rotations
-        - Potential floating-point instabilities
-        - Extreme rotation values
-        """
-        # Absolute rotation magnitude
-        abs_rotation = abs(angular_velocity * time_delta)
-        
-        # If rotation is below threshold, return near-identity transformation
-        if abs_rotation < ANGULAR_THRESHOLD:
+    # Compute angular displacements with thresholds
+    def compute_theta(w):
+        abs_rot = abs(w * delta_t)
+        if abs_rot < ANGULAR_THRESHOLD:
             return 0.0
-        
-        # Clip extreme values
-        clipped_rotation = np.clip(
-            angular_velocity * time_delta, 
-            -np.pi/2, 
-            np.pi/2
-        )
-        
-        return clipped_rotation
+        return np.clip(w * delta_t, -np.pi/2, np.pi/2)
     
-    # Compute safe angular displacements
-    theta_x = safe_angular_displacement(wx_rad, delta_t)
-    theta_y = safe_angular_displacement(wy_rad, delta_t)
-    theta_z = safe_angular_displacement(wz_rad, delta_t)
+    theta_x = compute_theta(wx_rad)
+    theta_y = compute_theta(wy_rad)
+    theta_z = compute_theta(wz_rad)
     
-    # Compute trigonometric values with numerical stability
-    def safe_trig(theta):
-        """Compute cos and sin with numerical stability."""
-        if abs(theta) < EPSILON:
-            return 1.0, 0.0
-        return np.cos(theta), np.sin(theta)
+    # Compute trig values
+    cos_x, sin_x = (1.0, 0.0) if abs(theta_x) < EPSILON else (np.cos(theta_x), np.sin(theta_x))
+    cos_y, sin_y = (1.0, 0.0) if abs(theta_y) < EPSILON else (np.cos(theta_y), np.sin(theta_y))
+    cos_z, sin_z = (1.0, 0.0) if abs(theta_z) < EPSILON else (np.cos(theta_z), np.sin(theta_z))
     
-    cos_x, sin_x = safe_trig(theta_x)
-    cos_y, sin_y = safe_trig(theta_y)
-    cos_z, sin_z = safe_trig(theta_z)
-    
-    # Construct rotation matrices with added numerical checks
+    # Construct rotation matrices
     R_x = np.array([
         [1, 0, 0],
         [0, cos_x, -sin_x],
@@ -159,13 +85,12 @@ def robust_compute_rotation_matrix(gyro_x, gyro_y, gyro_z, delta_t=1/60):
         [0, 0, 1]
     ])
     
-    # Combine rotations (ZYX order) with final numerical stability check
+    # Combine rotations
     try:
         final_rotation = R_z @ R_y @ R_x
         
-        # Ensure orthogonality and determinant close to 1
-        if not (np.allclose(np.linalg.det(final_rotation), 1.0, atol=1e-3) and 
-                np.allclose(final_rotation.T @ final_rotation, np.eye(3), atol=1e-3)):
+        # Single orthogonality check
+        if not (np.allclose(np.linalg.det(final_rotation), 1.0, atol=1e-3)):
             return np.eye(3)
         
         return final_rotation
@@ -173,16 +98,6 @@ def robust_compute_rotation_matrix(gyro_x, gyro_y, gyro_z, delta_t=1/60):
         return np.eye(3)
     
 def robust_rotation_matrices_dataframes(dataframes, fps=60):
-    """
-    Process dataframes with comprehensive error handling.
-    
-    Args:
-        dataframes (list): List of input dataframes
-        fps (int): Frames per second
-    
-    Returns:
-        list: Processed dataframes
-    """
     print(f"Starting robust processing of {len(dataframes)} dataframes at {fps} FPS")
     delta_t = 1 / fps
     processed_dfs = []
@@ -217,4 +132,3 @@ def robust_rotation_matrices_dataframes(dataframes, fps=60):
 
     print(f"\nCompleted robust processing of {len(processed_dfs)} dataframes")
     return processed_dfs
-

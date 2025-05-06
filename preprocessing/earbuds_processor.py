@@ -31,10 +31,3 @@ class EarbudSensorAligner:
            df = df.drop(columns=epoch_cols)
 
        return df
-   
-   def validate_data(self, df):
-        timestamp_col = next((col for col in self.timestamp_columns if col in df.columns), None)
-        if not timestamp_col:
-            print(f"Earbuds Missing required timestamp column. Expected one of: {self.timestamp_columns}")
-            return False
-        return True

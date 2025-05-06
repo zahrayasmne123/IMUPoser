@@ -33,14 +33,8 @@ def is_gyroscope_file(file_path):
         print(f"  Error checking file {file_path}: {e}")
         return False
     
-
-
-
+#Determine the type of watch file and assign it to the appropriate category.
 def assign_watch_file(file, data_files):
-    """
-    Determine the type of watch file and assign it to the appropriate category.
-    Returns True if the file was assigned, False otherwise.
-    """
     basename = os.path.basename(file).lower()
     
     # Determine side (left/right)

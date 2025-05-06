@@ -83,8 +83,6 @@ class PhoneSensorAligner:
         
         try:
             df = self.rename_time_column(df)      # First: rename time column
-            if not self.validate_data(df):        # Second: validate columns
-                return None
             df = self.convert_imu_units(df)       # Third: convert units
             df = self.rename_imu_columns(df)      # Fourth: rename to final column names
             return df
@@ -92,12 +90,3 @@ class PhoneSensorAligner:
         except Exception as e:
             print(f"Error processing data: {e}")
             return None
-        
-    def validate_data(self, df):
-        """Validate that all required columns are present"""
-        required_cols = ['timestamp'] + self.ACCEL_COLS + self.GYRO_COLS
-        missing_cols = [col for col in required_cols if col not in df.columns]
-        if missing_cols:
-            print(f"Missing required columns: {missing_cols}")
-            return False
-        return True

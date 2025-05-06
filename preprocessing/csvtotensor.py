@@ -86,7 +86,7 @@ def create_IMUPoser_tensor(
     device_positions = {
         'phone': 0,        # Phone (left position)
         'left_watch': 1,   # Left watch
-        'earbuds': 2,      # Earbuds/headphones (left position)
+        'earbuds': 2,      # Earbuds/headphones
         'right_watch': 4   # Right watch
     }
     
