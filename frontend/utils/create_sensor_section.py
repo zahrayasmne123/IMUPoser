@@ -1,5 +1,13 @@
 import streamlit as st
 
+### CREATE SENSOR SECTION: Interactive data collection hub for managing devices. Each device has its own expandable section with 
+# step-by-step setup instructions and progress tracking 
+# 1. Phone/Watch Expansion: Creates a collapsible section for device setup with two steps, "Install App" and "Configure Settings"
+# Installation provides app store links and configurations shows how to use the apps 
+# There is also a button to start from beginning 
+# 2. eSense Earbuds Expander Section: Defines "Web App Setup" and "Link to Data Collection" steps, providing 
+# context for the web application and linking to it.
+
 def create_sensor_section():
     st.header("Data Collection Hub")
     st.write("Connect and manage your sensor devices in one place. Follow the guided steps for each device.")
@@ -15,16 +23,15 @@ def create_sensor_section():
     # Phone Sensors Expander
     with st.expander("📱 Phone Sensors", expanded=False):
         st.subheader("Phone Sensors")
-        # Define the steps for phone setup
         steps = ["Install App", "Configure Settings"]
         current_step = st.session_state.phone_step
         
-        # Show progress indicator if not completed
+        # Progress indicator to see completion
         if current_step < len(steps):
             st.progress(current_step / (len(steps) - 1))
             st.write(f"Current Step: {steps[current_step]}")
         
-        # Step 1: Installation
+        #  Installation step: showing application download links 
         if current_step == 0:
             st.markdown("""
             ### Download Physics Toolbox Sensor Suite
@@ -41,12 +48,11 @@ def create_sensor_section():
             - Make sure you have enough storage space
             """)
             
-            # Added key "phone_install_complete"
             if st.button("✅ Mark Installation Complete", key="phone_install_complete"):
                 st.session_state.phone_step = 1
                 st.experimental_rerun()
         
-        # Step 2: Configuration
+        # Configuration step of how touse the app
         elif current_step == 1:
             st.markdown("""
             ### Configure Your Phone Sensors
@@ -60,7 +66,6 @@ def create_sensor_section():
             4. Ensure CSV export is working properly
             """)
             
-            # Added key "phone_config_complete"
             if st.button("✅ Configuration Complete", key="phone_config_complete"):
                 st.session_state.phone_step = 2
                 st.experimental_rerun()
@@ -85,16 +90,14 @@ def create_sensor_section():
     # Wrist Sensors Expander
     with st.expander("⌚ Wrist Sensors", expanded=False):
         st.subheader("MetaSens Wrist Sensors")
-        
-        # Create progress tracking with only two steps
-        steps = ["Install App", "Configure Sensors"]
+        steps = ["Install App", "Configure Sensors"]  #steps for progress bar again
         current_step = st.session_state.wrist_step
         
         # Show progress indicator if not completed
         if current_step < len(steps):
             st.write(f"Current Step: {steps[current_step]}")
         
-        # Step content 
+        # Installation steps and advice 
         if current_step == 0:
             st.markdown("""
             ### Getting Started
@@ -133,31 +136,26 @@ def create_sensor_section():
         elif current_step == 2:
             st.success("🎉 Setup Complete!")
             st.info("You have successfully set up the wrist sensors and configured all necessary parameters.")
-            
-            # Add the start over button
-            if st.button("🔄 Start from Beginning"):
+            if st.button("🔄 Start from Beginning"): # start over button
                 st.session_state.wrist_step = 0
                 st.experimental_rerun()
     
     # eSense Expander
     with st.expander("🎧 eSense Earbuds", expanded=False):
         st.subheader("eSense Earbuds")
-        
-        # Create progress tracking with steps
         steps = ["Web App Setup", "Link to Data Collection"]
         current_step = st.session_state.esense_step
-        
-        # Show progress indicator if not completed
-        if current_step < len(steps):
+    
+        if current_step < len(steps): #progress tracker
             st.progress(current_step / (len(steps) - 1))
             st.write(f"Current Step: {steps[current_step]}")
         
-        # Step 1: Web App Introduction
+        # Web App introduction and context
         if current_step == 0:
             st.markdown("""
             ### eSense Data Recording Web App
             
-            eSense can record data using our specialized web application:
+            eSense can record data using our specialised web application:
             
             #### Key Features:
             - Real-time sensor data collection
@@ -174,7 +172,7 @@ def create_sensor_section():
                 st.session_state.esense_step = 1
                 st.experimental_rerun()
         
-        # Step 2: Link to Data Collection
+        # Link to Data Collection for second step
         elif current_step == 1:
             st.markdown("""
             ### Link to Data Collection
@@ -184,17 +182,9 @@ def create_sensor_section():
             - Ensure eSense earbuds are paired
             - Check Bluetooth connectivity
             - Prepare your recording environment
+            - Find this page on the navigation bar
             """)
-            
-            if st.button("🎧 Launch eSense Data Collection Web Application"):
-            # Store the page we want to show in session state
-                if 'current_page' not in st.session_state:
-                    st.session_state.current_page = 'main'
-                    
-                    st.session_state.current_page = 'esens_collection'
-                    st.session_state.esense_step = 2
-                    st.success("Redirecting to Data Collection Page...")
-                    st.experimental_rerun()
+    
         
         # Completion Card
         elif current_step == 2:
