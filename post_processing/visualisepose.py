@@ -5,6 +5,7 @@ from pathlib import Path
 import os
 from imuposer.smpl.parametricModel import ParametricModel
 from imuposer.math.angular import axis_angle_to_rotation_matrix, r6d_to_rotation_matrix
+from imuposer.config import BASE_DIR
 from .visualisation_helpers import *  # noqa: F403
 
 """VISUALISE POSE: 
@@ -22,7 +23,7 @@ saved in the correct directories
 
 
 """
-base_dir = "/dcs/22/u2254377/cs310/IMUPoser"
+
 
 
 
@@ -132,7 +133,7 @@ def save_individual_frames( joints_data, output_dir="pose_frames_dots", frame_in
 
 def convert_poses_to_joints(
     model_predictions,
-    smpl_model_path=os.path.join(base_dir, "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
+    smpl_model_path=os.path.join(BASE_DIR, "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
 ):
 
     body_model = ParametricModel(str(smpl_model_path), device=torch.device("cpu")) #initialse smpl model
@@ -187,16 +188,16 @@ def load_predictions(predictions_path):
     return predictions
 
 def full_visualisation_pipeline():
-    predictions = load_predictions(os.path.join(base_dir, "rawdata/processed/predictions.pt"))
+    predictions = load_predictions(os.path.join(BASE_DIR, "rawdata/processed/predictions.pt"))
     joints = convert_poses_to_joints(
-        predictions, os.path.join(base_dir, "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
+        predictions, os.path.join(BASE_DIR, "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
     )
 
     frame_indices = [0, 100, 200, 300, 400, 500] if joints.shape[1] >= 500 else None
-    save_grid_viewer(joints, os.path.join(base_dir, "output/pose_grid_dots.png"), frame_indices)
+    save_grid_viewer(joints, os.path.join(BASE_DIR, "output/pose_grid_dots.png"), frame_indices)
 
 
-    frames_dir = save_individual_frames(joints, os.path.join(base_dir, "output/pose_frames_dots"), 5)
-    create_gif(frames_dir, os.path.join(base_dir, "output/output_frames.gif"))  # noqa: F405
+    frames_dir = save_individual_frames(joints, os.path.join(BASE_DIR, "output/pose_frames_dots"), 5)
+    create_gif(frames_dir, os.path.join(BASE_DIR, "output/output_frames.gif"))  # noqa: F405
 
     print("visualisation successfully completed!")

@@ -2,8 +2,7 @@ import streamlit as st # type: ignore
 import os
 from frontend.utils.device_data_upload import device_data_upload
 from frontend.utils.create_sensor_section import create_sensor_section
-
-base_dir = "/dcs/22/u2254377/cs310/IMUPoser"
+from src.imuposer.config import BASE_DIR
 ################## DATA ANALYSIS PAGE ############################
 # 1. Creates four tab different data analysis functions in sub pages
 # 2. On sub-page 1: Call the create_sensor_section function
@@ -78,7 +77,7 @@ def data_analysis_page():
     with sub_page[0]:
         create_sensor_section()
     with sub_page[1]:
-        device_data_upload(base_dir)
+        device_data_upload(BASE_DIR)
 
     with sub_page[2]:
         st.header("3D Pose visualisation")
@@ -88,7 +87,7 @@ def data_analysis_page():
             st.subheader("Pose Frames") # visualisation carousel
             
             # Gather individual frames from frames directory 
-            frames_dir = os.path.join(base_dir,"output", "pose_frames_dots")
+            frames_dir = os.path.join(BASE_DIR,"output", "pose_frames_dots")
             individual_frame_files = sorted([f for f in os.listdir(frames_dir) if f.endswith('.png')])
             
             if individual_frame_files:
@@ -119,7 +118,7 @@ def data_analysis_page():
                         )
                     
                     # Download as gif to view the GIF
-                    gif_path = os.path.join(base_dir, "output", "output_frames.gif")
+                    gif_path = os.path.join(BASE_DIR, "output", "output_frames.gif")
                     if os.path.exists(gif_path):
                         st.write("Full Animation:")
                         st.image(gif_path, use_column_width=True)
@@ -137,7 +136,7 @@ def data_analysis_page():
             st.subheader("Multi-View Analysis")
             
             # Display the multi-view grid image from putput dolder 
-            multiview_grid_path = os.path.join(base_dir, "output/pose_grid.png")
+            multiview_grid_path = os.path.join(BASE_DIR, "output/pose_grid.png")
             if os.path.exists(multiview_grid_path):
                 st.image(multiview_grid_path, use_column_width=True, caption="Multi-view pose grid")
                 

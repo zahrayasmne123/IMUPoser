@@ -1,9 +1,8 @@
 import torch
 from pathlib import Path
-from src.imuposer.config import Config, amass_combos
+from src.imuposer.config import Config, amass_combos, BASE_DIR
 from src.imuposer.models.LSTMs.IMUPoser_Model import IMUPoserModel
 import os
-base_dir = "/dcs/22/u2254377/cs310/IMUPoser"
 
 """ GENERATE PREDICTIONS.PY: Main file handling loading a pre-trained LSTM and runs inference to produce
 pose predictions using the model as a 'black box'
@@ -34,28 +33,28 @@ def load_model(checkpoint_path):
             config = Config(
                 experiment=config_dict.experiment if hasattr(config_dict, 'experiment') else "IMUPoserGlobalModel",
                 model=config_dict.model if hasattr(config_dict, 'model') else "GlobalModelIMUPoser",
-                project_root_dir= base_dir,
+                project_root_dir= BASE_DIR,
                 joints_set=config_dict.joints_set if hasattr(config_dict, 'joints_set') else amass_combos['global'],
                 normalize=False,
                 r6d=True,
                 loss_type="mse",
                 use_joint_loss=True,
                 device='cpu',
-                og_smpl_model_path=  os.path.join(base_dir, "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
+                og_smpl_model_path=  os.path.join(BASE_DIR, "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
             )
         else:
             # Use fall back configuration
             config = Config(
                 experiment="IMUPoserGlobalModel",
                 model="GlobalModelIMUPoser",
-                project_root_dir=base_dir,
+                project_root_dir=BASE_DIR,
                 joints_set=amass_combos['global'],
                 normalize=False,
                 r6d=True,
                 loss_type="mse",
                 use_joint_loss=True,
                 device='cpu',
-                og_smpl_model_path=  os.path.join(base_dir, "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
+                og_smpl_model_path=  os.path.join(BASE_DIR, "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
             )
         
         # Create model instance
