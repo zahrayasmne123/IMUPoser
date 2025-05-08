@@ -57,7 +57,7 @@ st.markdown("""
 
 def display_tempo_title():
     """
-    Display a stylish title for the TEMPO application
+    Displa title for the TEMPO application
     """
     st.markdown("""
     <style>
@@ -91,8 +91,6 @@ def display_tempo_title():
 
 def home_page():
     display_tempo_title()
-    
-    # Custom CSS for enhanced styling
     st.markdown("""
         <style>
         .highlight-container {

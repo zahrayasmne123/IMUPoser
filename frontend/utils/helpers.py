@@ -21,20 +21,20 @@ def run_setup_script():
     try:
         # Find the IMUPoser src directory
         potential_source_directories = ["./src", "../src", "/IMUPoser/src", "/src"]
-        src_dir = None
+        source_directory = None
         
-        for dir in potential_source_directories:
-            if os.path.exists(dir) and os.path.isdir(dir):
-                src_dir = dir
+        for directory in potential_source_directories:
+            if os.path.exists(directory) and os.path.isdir(directory):
+                source_directory = directory
                 break
         
-        if not src_dir:
+        if not source_directory:
             st.error("Could not find IMUPoser src directory")
             return False
         
         # Install the IMUPoser package without reinstalling dependencies
         subprocess.check_call([
-            "pip", "install", "-e", src_dir,
+            "pip", "install", "-e", source_directory,
             "--no-dependencies",  # Skip reinstalling dependencies
             "--quiet"
         ])
@@ -42,8 +42,8 @@ def run_setup_script():
         st.success("✓ IMUPoser environment ready")
         return True
             
-    except Exception as e:
-        st.error(f"Error during minimal setup: {str(e)}")
+    except Exception:
+        st.error("Error during minimal setup")
         return False
 
 def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=True, checkpoint_path=None):
@@ -82,8 +82,8 @@ def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=T
         'timestamp': torch.tensor([]),
     }, tensor_path)
     
-    st.text(f"✓ Tensor shape: {tensor.shape}")
-    st.text(f"✓ Saved to: {tensor_path}")
+    st.text(f"Tensor shape: {tensor.shape}")
+    st.text(f"Saved to: {tensor_path}")
     
     predictions = None
     if run_model:
@@ -97,9 +97,9 @@ def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=T
             possible_paths = [
                 os.path.abspath("checkpoints/checkpoint.ckpt")]
         
-            for path in possible_paths:
-                if os.path.exists(path):
-                    checkpoint_path = path
+            for path_option in possible_paths:
+                if os.path.exists(path_option):
+                    checkpoint_path = path_option
                     st.text(f"Found checkpoint at: {checkpoint_path}")
                     break
             else:
@@ -121,18 +121,18 @@ def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=T
                 st.text("Import error: trying subprocess method")
                 
                 # Use the subprocess method as fallback
-                script_path = None
-                for path in ["./post_processing/generate_prediction.py", "../post_processing/generate_prediction.py", "./generate_prediction.py"]:
-                    if os.path.exists(path):
-                        script_path = path
+                path_to_script = None
+                for path_option in ["./post_processing/generate_prediction.py", "../post_processing/generate_prediction.py", "./generate_prediction.py"]:
+                    if os.path.exists(path_option):
+                        path_to_script = path_option
                         break
                 
-                if script_path:
-                    st.text(f"Found inference script at: {script_path}")
+                if path_to_script:
+                    st.text(f"Found inference script at: {path_to_script}")
                     
                     # Create command
                     cmd = [
-                        "python", script_path,
+                        "python", path_to_script,
                         "--checkpoint", checkpoint_path,
                         "--input", tensor_path,
                         "--output", predictions_path,
@@ -177,9 +177,6 @@ def process_uploaded_files(data_dir, output_dir='rawdata/processed', run_model=T
             
         except Exception:
             st.error("Error model predictions")
-            import traceback
-            st.text(traceback.format_exc())
-
 
     full_visualisation_pipeline()
     
