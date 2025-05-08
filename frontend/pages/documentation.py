@@ -38,7 +38,7 @@ def documentation_help_page():
     - Restart the app and reconnect the devices.
     
     **Q: How do I process the data after uploading it?**
-    A: After uploading your sensor data on the "Data Analysis" page, you can click the "Process Files" button to initiate the processing pipeline. This will analyze the motion data and generate reports with visualisations.
+    A: After uploading your sensor data on the "Data Analysis" page, you can click the "Process Files" button to initiate the processing pipeline. This will analyse the motion data and generate reports with visualisations.
 
     **Q: How can I export the analysis results?**
     A: You can export your analysis results in CSV or PDF format by clicking the "Export" button on the results page. Detailed instructions on how to save and share your reports will be displayed.
