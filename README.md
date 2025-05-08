@@ -15,7 +15,7 @@ Code Structure Explanation
 
 ## Running Code: 
 1. Install `requirements.txt `
-2. Need to change base dir in `imuposer/config.py` to current base directory
+2. Need to change `BASE_DIR` in `imuposer/config.py` to current base directory
 3. In terminal `streamlit run frontend/app.py --server.port 8500` 
 (usually links in terminal given after running dont work, have to open port and run from there)
 
