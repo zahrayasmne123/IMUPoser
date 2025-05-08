@@ -1,7 +1,6 @@
 # REAMDME FINAL REPORT
 Code Structure Explanation 
 
-- .streamlit :  contains 'secrets' for syncing to the global google drive folder 
 - checkpoints : contains check point from model training 
 - frontend : 
     - app.py : main application for running front end 
@@ -15,7 +14,7 @@ Code Structure Explanation
 - src : src code for original IMUPoser (I did not write these)
 
 ## Running Code: 
-1. Install requirements.txt 
+1. Install `requirements.txt `
 2. Need to change base dir in `imuposer/config.py` to current base directory
 3. In terminal `streamlit run frontend/app.py --server.port 8500` 
 (usually links in terminal given after running dont work, have to open port and run from there)
@@ -24,7 +23,7 @@ Code Structure Explanation
 1. Go to data analysis page (from navigation bar) 
 2. Go to upload device data sub page 
 3. Click on google drive link 
-4. There are 4 files, select and upload them 
+4. There are 4 files, select and upload them (these are left/right watch accelerometer and gyroscope)
 5. Once uploaded, press process files 
 6. Should take around ~4 minutes to load visualisations 
 7. Go to 3d Pose visualisation sub page (in data analysis page)
