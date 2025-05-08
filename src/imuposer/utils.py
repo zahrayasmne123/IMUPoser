@@ -25,22 +25,14 @@ def convert_subset_pose_to_full(config: Config, subset_pose_batch: torch.Tensor)
     return _pose
 
 def get_checkpoints(combo_id:str, model_names: list, path_to_checkpoints=Path("../../checkpoints/")):
-    # find the latest "best" ckpt
-    # path_to_checkpoints = Path("../../checkpoints/")
-
     checkpoints = [x.name for x in path_to_checkpoints.iterdir() if combo_id in x.name]
-    
-    best_ckpts = {}
 
+    best_ckpts = {}
     for model_name in model_names:
         model_checkpoints = [x for x in checkpoints if model_name == x.split("_")[0]]
-
-        # get the latest model_checkpoint
         model_creation_dates = [datetime.strptime(x.split("-", 1)[1], "%m%d%Y-%H%M%S") for x in model_checkpoints]
 
         latest_model = model_checkpoints[np.argmax(model_creation_dates)]
-
-        # now get the best ckpt
         try:
             with open(path_to_checkpoints / latest_model / "best_model.txt", "r") as f:
                 best_model_name = Path(f.readlines()[0].strip()).name
