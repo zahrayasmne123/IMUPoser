@@ -82,7 +82,7 @@ def about_us_page():
         <div class="tempo-subtitle">Tracking and Evaluating Movement for Patient Observation</div>
     """, unsafe_allow_html=True)
     
-    # Introductory Message
+    # Introductory message
     st.markdown("""
         <div class="highlight-container">
             <h2>Research Overview</h2>

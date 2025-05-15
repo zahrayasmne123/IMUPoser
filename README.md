@@ -5,19 +5,20 @@ Code Structure Explanation
 - frontend : 
     - app.py : main application for running front end 
     - pages : sub pages for frontend
-    - utils : helpter functions for frontend
+    - utils : helper functions for frontend
 - imuposer_dataset : dataset used for analysis to original IMUPoser implementation 
 - post_processing : loads pre-trained model to produce predictions 
 - pre_processing : data cleaning/reformatting pipeline 
 - rawdata : data uploaded from TEMPO saved locally 
-- scripts : model training scripts (from orginal IMUPoser, I did not write these)
-- src : src code for original IMUPoser (I did not write these)
+- scripts : model training scripts (from orginal IMUPoser, I did not write this code)
+- src : src code for original IMUPoser (I did not write this code)
 
 ## Running Code: 
 1. Install `requirements.txt `
-2. Need to change `BASE_DIR` in `imuposer/config.py` to current base directory
-3. In terminal `streamlit run frontend/app.py --server.port 8500` 
-(usually links in terminal given after running dont work, have to open port and run from there)
+2. Need to change the global `BASE_DIR` variable in `imuposer/config.py` to current base directory
+3. In terminal `streamlit run frontend/app.py --server.port 8500` (can be any port 5001,5002...)
+4. Ensure port is open to run
+(usually links in terminal given after running dont work, so need to manually open port and run from there)
 
 ## For running prediction model 
 1. Go to data analysis page (from navigation bar) 

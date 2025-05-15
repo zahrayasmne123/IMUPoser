@@ -43,7 +43,6 @@ def load_model(checkpoint_path):
                 og_smpl_model_path=  os.path.join(BASE_DIR, "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl")
             )
         else:
-            # Use fall back configuration
             config = Config(
                 experiment="IMUPoserGlobalModel",
                 model="GlobalModelIMUPoser",
